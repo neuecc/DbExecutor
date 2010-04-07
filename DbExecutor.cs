@@ -1,11 +1,11 @@
 ﻿/*--------------------------------------------------------------------------
-* DbExecuter - linq based database executer
-* ver 1.0.0.0 (Apr. 07th, 2010)
+* DbExecutor - linq based database executor
+* ver 1.0.0.1 (Apr. 08th, 2010)
 *
 * created and maintained by neuecc <ils@neue.cc>
 * licensed under Microsoft Public License(Ms-PL)
 * http://neue.cc/
-* http://dbexecuter.codeplex.com/
+* http://dbexecutor.codeplex.com/
 *--------------------------------------------------------------------------*/
 
 using System;
@@ -18,12 +18,12 @@ using Codeplex.Data.Extensions;
 
 namespace Codeplex.Data
 {
-    /// <summary>linq based database executer</summary>
-    public class DbExecuter : IDisposable
+    /// <summary>linq based database executor</summary>
+    public class DbExecutor : IDisposable
     {
         private readonly DbConnection dbConnection;
 
-        public DbExecuter(DbConnection dbConnection)
+        public DbExecutor(DbConnection dbConnection)
         {
             this.dbConnection = dbConnection;
         }
@@ -91,9 +91,9 @@ namespace Codeplex.Data
         /// <param name="query">parameter name is applied "@p0, @p1,..."</param>
         public static T ExecuteScalar<T>(DbConnection dbConnection, string query, params object[] parameters)
         {
-            using (var executer = new DbExecuter(dbConnection))
+            using (var executor = new DbExecutor(dbConnection))
             {
-                return executer.ExecuteScalar<T>(query, parameters);
+                return executor.ExecuteScalar<T>(query, parameters);
             }
         }
 
@@ -101,9 +101,9 @@ namespace Codeplex.Data
         /// <param name="query">parameter name is applied "@p0, @p1,..."</param>
         public static int ExecuteNonQuery(DbConnection dbConnection, string query, params object[] parameters)
         {
-            using (var executer = new DbExecuter(dbConnection))
+            using (var executor = new DbExecutor(dbConnection))
             {
-                return executer.ExecuteNonQuery(query, parameters);
+                return executor.ExecuteNonQuery(query, parameters);
             }
         }
 
@@ -111,9 +111,9 @@ namespace Codeplex.Data
         /// <param name="query">parameter name is applied "@p0, @p1,..."</param>
         public static IEnumerable<IDataRecord> ExecuteRead(DbConnection dbConnection, string query, params object[] parameters)
         {
-            using (var executer = new DbExecuter(dbConnection))
+            using (var executor = new DbExecutor(dbConnection))
             {
-                foreach (var item in executer.ExecuteRead(query, parameters)) yield return item;
+                foreach (var item in executor.ExecuteRead(query, parameters)) yield return item;
             }
         }
 
@@ -122,9 +122,9 @@ namespace Codeplex.Data
         public static IEnumerable<T> ExecuteQuery<T>(DbConnection dbConnection, string query, params object[] parameters)
             where T : new()
         {
-            using (var executer = new DbExecuter(dbConnection))
+            using (var executor = new DbExecutor(dbConnection))
             {
-                foreach (var item in executer.ExecuteQuery<T>(query, parameters)) yield return item;
+                foreach (var item in executor.ExecuteQuery<T>(query, parameters)) yield return item;
             }
         }
 
