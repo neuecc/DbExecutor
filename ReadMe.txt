@@ -18,7 +18,7 @@ VS2005 or target framework 2.0
 
 // HowToUse
 
-using System.Data;
+using Codeplex.Data;
 
 var executer = new DbExecuter(DbConnection);
 executer.Methods(query, parameters)
