@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 namespace Codeplex.Data
 {
     /// <summary>Represents PropertyInfo delegate.</summary>
-    public interface IPropertyAccessor
+    internal interface IPropertyAccessor
     {
         string Name { get; }
         object GetValue(object target);
@@ -12,7 +12,7 @@ namespace Codeplex.Data
     }
 
     /// <summary>Represents PropertyInfo delegate.</summary>
-    public class PropertyAccessor<TTarget, TProperty> : IPropertyAccessor
+    internal class PropertyAccessor<TTarget, TProperty> : IPropertyAccessor
     {
         readonly string name;
         readonly Func<TTarget, TProperty> getter;
@@ -38,15 +38,6 @@ namespace Codeplex.Data
         public void SetValue(object target, object value)
         {
             this.setter((TTarget)target, (TProperty)value);
-        }
-    }
-
-    /// <summary>PropertyName keyed IPropertyAccessor collection.</summary>
-    public class PropertyCollection : KeyedCollection<string, IPropertyAccessor>
-    {
-        protected override string GetKeyForItem(IPropertyAccessor item)
-        {
-            return item.Name;
         }
     }
 }

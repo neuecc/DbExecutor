@@ -5,7 +5,6 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Diagnostics.Contracts;
-using Codeplex.Data.Extensions;
 
 namespace Codeplex.Data
 {
@@ -14,7 +13,7 @@ namespace Codeplex.Data
     {
         readonly IDbConnection connection;
         readonly IDbTransaction transaction;
-        private bool isTransactionCompleted = false;
+        bool isTransactionCompleted = false;
 
         /// <summary>Connect start.</summary>
         /// <param name="connection">Database connection.</param>
@@ -50,7 +49,7 @@ namespace Codeplex.Data
             command.CommandText = query;
             if (parameter != null)
             {
-                foreach (var p in GetAccessors(parameter.GetType()))
+                foreach (var p in PropertyCache.GetAccessors(parameter.GetType()))
                 {
                     var param = command.CreateParameter();
                     param.ParameterName = "@" + p.Name;
@@ -83,7 +82,11 @@ namespace Codeplex.Data
         {
             // Contract.Requires(command != null);
 
-            foreach (var item in command.EnumerateAll()) yield return item;
+            using (command)
+            using (var reader = command.ExecuteReader())
+            {
+                while (reader.Read()) yield return reader;
+            }
         }
 
         /// <summary>Executes and returns the data records."</summary>
@@ -157,7 +160,7 @@ namespace Codeplex.Data
         /// <returns>Query results. This is lazy evaluation.</returns>
         public IEnumerable<T> SelectTo<T>(string query, object parameter = null) where T : new()
         {
-            var accessors = GetAccessors(typeof(T));
+            var accessors = PropertyCache.GetAccessors(typeof(T));
             return ExecuteReader(query, parameter)
                 .Select(dr =>
                 {
@@ -178,10 +181,9 @@ namespace Codeplex.Data
         /// <param name="insertItem">Table's column name extracted from PropertyName.</param>
         public void InsertTo(string tableName, object insertItem)
         {
-            var accessors = GetAccessors(insertItem.GetType());
-            var ac = GetAccessors(insertItem.GetType());
-            var column = string.Join(", ", ac.Select(p => p.Name));
-            var data = string.Join(", ", ac.Select(p => "@" + p.Name));
+            var accessors = PropertyCache.GetAccessors(insertItem.GetType());
+            var column = string.Join(", ", accessors.Select(p => p.Name));
+            var data = string.Join(", ", accessors.Select(p => "@" + p.Name));
 
             var query = string.Format("insert into {0} ({1}) values ({2})", tableName, column, data);
             ExecuteNonQuery(query, insertItem);
