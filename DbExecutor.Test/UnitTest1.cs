@@ -7,12 +7,25 @@ using System.IO;
 using System.Data.SqlServerCe;
 using Codeplex.Data;
 using System.Data;
+using System.Diagnostics.Contracts;
+
+
 
 namespace DbExecutorTest
 {
     [TestClass]
     public class UnitTest1
     {
+        [AssemblyInitialize]
+        public static void AssemblyInitialize(TestContext tc)
+        {
+            Contract.ContractFailed += (sender, e) =>
+            {
+                e.SetUnwind();
+                Assert.Fail(e.FailureKind.ToString() + ":" + e.Message);
+            };
+        }
+
         public TestContext TestContext { get; set; }
 
         private string connectionString;
@@ -24,6 +37,7 @@ namespace DbExecutorTest
             {
                 DataSource = Path.Combine(TestContext.TestDir, "testdb")
             }.ToString();
+
             using (var en = new SqlCeEngine(connectionString))
             {
                 en.CreateDatabase();

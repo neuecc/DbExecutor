@@ -19,8 +19,7 @@ namespace Codeplex.Data
         /// <param name="connection">Database connection.</param>
         public DbExecutor(IDbConnection connection)
         {
-            if (connection == null) throw new ArgumentNullException("connection");
-            Contract.EndContractBlock();
+            Contract.Requires(connection != null);
 
             this.connection = connection;
             if (connection.State != ConnectionState.Open) connection.Open();
@@ -31,22 +30,23 @@ namespace Codeplex.Data
         /// <param name="connection">Database connection.</param>
         /// <param name="isolationLevel">Transaction IsolationLevel.</param>
         public DbExecutor(IDbConnection connection, IsolationLevel isolationLevel)
+            : this(connection)
         {
             if (connection == null) throw new ArgumentNullException("connection");
             Contract.EndContractBlock();
 
-            this.connection = connection;
-            if (connection.State != ConnectionState.Open) connection.Open();
             this.transaction = connection.BeginTransaction(isolationLevel);
         }
 
-        private IDbCommand CreateCommand(string query, object parameter)
+        private IDbCommand CreateCommand(string query, CommandType commandType, object parameter)
         {
-            // Contract.Requires(!String.IsNullOrEmpty(query));
+            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
+            Contract.Ensures(Contract.Result<IDbCommand>() != null);
+            Contract.EndContractBlock();
 
             var command = connection.CreateCommand();
-
             command.CommandText = query;
+            command.CommandType = commandType;
             if (parameter != null)
             {
                 foreach (var p in PropertyCache.GetAccessors(parameter.GetType()))
@@ -62,72 +62,51 @@ namespace Codeplex.Data
             return command;
         }
 
-        private IDbCommand CreateCommand(string query, IEnumerable<IDataParameter> parameters)
+        public IEnumerable<IDataRecord> ExecuteReader(string query, object parameter = null)
         {
-            // Contract.Requires(!String.IsNullOrEmpty(query));
+            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
+            Contract.Ensures(Contract.Result<IEnumerable<IDataRecord>>() != null);
+            Contract.EndContractBlock();
 
-            var command = connection.CreateCommand();
-
-            command.CommandText = query;
-            foreach (var p in parameters)
-            {
-                command.Parameters.Add(p);
-            }
-            if (transaction != null) command.Transaction = transaction;
-
-            return command;
+            return ExecuteReader(query, CommandType.Text, parameter);
         }
 
-        private IEnumerable<IDataRecord> ExecuteReader(IDbCommand command)
+        /// <summary>Executes and returns the data records."</summary>
+        /// <param name="query">SQL code.</param>
+        /// <param name="commandType">Command type.</param>
+        /// <param name="parameter">PropertyName parameterized to @PropertyName. if null then no use parameter.</param>
+        /// <returns>Query results. This is lazy evaluation.</returns>
+        public IEnumerable<IDataRecord> ExecuteReader(string query, CommandType commandType, object parameter = null)
         {
-            // Contract.Requires(command != null);
+            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
+            Contract.Ensures(Contract.Result<IEnumerable<IDataRecord>>() != null);
+            Contract.EndContractBlock();
 
-            using (command)
+            using (var command = CreateCommand(query, commandType, parameter))
             using (var reader = command.ExecuteReader())
             {
                 while (reader.Read()) yield return reader;
             }
-        }
 
-        /// <summary>Executes and returns the data records."</summary>
-        /// <param name="query">SQL code.</param>
-        /// <param name="parameter">PropertyName parameterized to @PropertyName. if null then no use parameter.</param>
-        /// <returns>Query results. This is lazy evaluation.</returns>
-        public IEnumerable<IDataRecord> ExecuteReader(string query, object parameter = null)
-        {
-            if (string.IsNullOrEmpty(query)) throw new ArgumentNullException("query");
-            Contract.Ensures(Contract.Result<IEnumerable<IDataRecord>>() != null);
-            Contract.EndContractBlock();
-
-            return ExecuteReader(CreateCommand(query, parameter));
-        }
-
-        /// <summary>Executes and returns the data records."</summary>
-        /// <param name="query">SQL code.</param>
-        /// <param name="parameters">Parameters.</param>
-        /// <returns>Query results. This is lazy evaluation.</returns>
-        public IEnumerable<IDataRecord> ExecuteReader(string query, IEnumerable<IDataParameter> parameters)
-        {
-            return ExecuteReader(CreateCommand(query, parameters));
         }
 
         /// <summary>Executes and returns the number of rows affected."</summary>
         public int ExecuteNonQuery(string query, object parameter = null)
         {
-            Contract.Requires(!String.IsNullOrEmpty(query));
+            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
+            Contract.EndContractBlock();
 
-            using (var cmd = CreateCommand(query, parameter))
-            {
-                return cmd.ExecuteNonQuery();
-            }
+            return ExecuteNonQuery(query, CommandType.Text, parameter);
         }
 
-        /// <summary>Executes and returns the number of rows affected."</summary>
-        public int ExecuteNonQuery(string query, IEnumerable<IDataParameter> parameters)
+        public int ExecuteNonQuery(string query, CommandType commandType, object parameter = null)
         {
-            using (var cmd = CreateCommand(query, parameters))
+            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
+            Contract.EndContractBlock();
+
+            using (var command = CreateCommand(query, commandType, parameter))
             {
-                return cmd.ExecuteNonQuery();
+                return command.ExecuteNonQuery();
             }
         }
 
@@ -138,18 +117,26 @@ namespace Codeplex.Data
         /// <returns>Query results.</returns>
         public T ExecuteScalar<T>(string query, object parameter = null)
         {
-            using (var cmd = CreateCommand(query, parameter))
-            {
-                return (T)cmd.ExecuteScalar();
-            }
+            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
+            Contract.Ensures(Contract.Result<T>() != null);
+            Contract.EndContractBlock();
+
+            return ExecuteScalar<T>(query, CommandType.Text, parameter);
         }
 
         /// <summary>Executes and returns the first column.</summary>
-        public T ExecuteScalar<T>(string query, IEnumerable<IDataParameter> parameters)
+        public T ExecuteScalar<T>(string query, CommandType commandType, object parameter = null)
         {
-            using (var cmd = CreateCommand(query, parameters))
+            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
+            Contract.Ensures(Contract.Result<T>() != null);
+            Contract.EndContractBlock();
+
+            using (var command = CreateCommand(query, commandType, parameter))
             {
-                return (T)cmd.ExecuteScalar();
+                var result = (T)command.ExecuteScalar();
+
+                Contract.Assume(result != null);
+                return result;
             }
         }
 
@@ -160,6 +147,19 @@ namespace Codeplex.Data
         /// <returns>Query results. This is lazy evaluation.</returns>
         public IEnumerable<T> SelectTo<T>(string query, object parameter = null) where T : new()
         {
+            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
+            Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
+            Contract.EndContractBlock();
+
+            return SelectTo<T>(query, CommandType.Text, parameter);
+        }
+
+        public IEnumerable<T> SelectTo<T>(string query, CommandType commandType, object parameter = null) where T : new()
+        {
+            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
+            Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
+            Contract.EndContractBlock();
+
             var accessors = PropertyCache.GetAccessors(typeof(T));
             return ExecuteReader(query, parameter)
                 .Select(dr =>
@@ -181,11 +181,17 @@ namespace Codeplex.Data
         /// <param name="insertItem">Table's column name extracted from PropertyName.</param>
         public void InsertTo(string tableName, object insertItem)
         {
+            if (string.IsNullOrEmpty(tableName)) throw new ArgumentException("tableName");
+            if (insertItem == null) throw new ArgumentNullException("insertItem");
+            Contract.EndContractBlock();
+
             var accessors = PropertyCache.GetAccessors(insertItem.GetType());
             var column = string.Join(", ", accessors.Select(p => p.Name));
             var data = string.Join(", ", accessors.Select(p => "@" + p.Name));
 
             var query = string.Format("insert into {0} ({1}) values ({2})", tableName, column, data);
+
+            Contract.Assume(query.Length > 0);
             ExecuteNonQuery(query, insertItem);
         }
 
@@ -194,8 +200,8 @@ namespace Codeplex.Data
         {
             if (transaction != null)
             {
-                isTransactionCompleted = true;
                 transaction.Commit();
+                isTransactionCompleted = true;
             }
         }
 

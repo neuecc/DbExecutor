@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
+using System.Diagnostics.Contracts;
 
 namespace Codeplex.Data
 {
@@ -12,6 +13,10 @@ namespace Codeplex.Data
 
         public static PropertyCollection GetAccessors(Type targetType)
         {
+            if (targetType == null) throw new ArgumentNullException("targetType");
+            Contract.Ensures(Contract.Result<PropertyCollection>() != null);
+            Contract.EndContractBlock();
+
             PropertyCollection accessors;
             if (!propertyCache.TryGetValue(targetType, out accessors))
             {
@@ -24,6 +29,7 @@ namespace Codeplex.Data
                 propertyCache.Add(targetType, accessors);
             };
 
+            Contract.Assume(accessors != null);
             return accessors;
         }
     }
@@ -41,15 +47,31 @@ namespace Codeplex.Data
         /// <summary>Make delegate accessor.</summary>
         public static IPropertyAccessor ToAccessor(this PropertyInfo pi)
         {
-            var getterType = typeof(Func<,>).MakeGenericType(pi.DeclaringType, pi.PropertyType);
+            if (pi == null) throw new ArgumentNullException("pi");
+            Contract.Ensures(Contract.Result<IPropertyAccessor>() != null);
+            Contract.EndContractBlock();
+
+            var func = typeof(Func<,>);
+            Contract.Assume(func.IsGenericTypeDefinition);
+            Contract.Assume(func.GetGenericArguments().Length == 2);
+
+            var getterType = func.MakeGenericType(pi.DeclaringType, pi.PropertyType);
             var getMethod = pi.GetGetMethod();
             var getter = (getMethod != null) ? Delegate.CreateDelegate(getterType, getMethod) : null;
+
+            var action = typeof(Action<,>);
+            Contract.Assume(action.IsGenericTypeDefinition);
+            Contract.Assume(action.GetGenericArguments().Length == 2);
 
             var setterType = typeof(Action<,>).MakeGenericType(pi.DeclaringType, pi.PropertyType);
             var setMethod = pi.GetSetMethod();
             var setter = (setMethod != null) ? Delegate.CreateDelegate(setterType, setMethod) : null;
 
-            var propertyType = typeof(PropertyAccessor<,>).MakeGenericType(pi.DeclaringType, pi.PropertyType);
+            var propAccessor = typeof(PropertyAccessor<,>);
+            Contract.Assume(propAccessor.IsGenericTypeDefinition);
+            Contract.Assume(propAccessor.GetGenericArguments().Length == 2);
+
+            var propertyType = propAccessor.MakeGenericType(pi.DeclaringType, pi.PropertyType);
             return (IPropertyAccessor)Activator.CreateInstance(propertyType, pi.Name, getter, setter);
         }
     }

@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
 using System.Reflection;
+using System.Diagnostics.Contracts;
 
 namespace Codeplex.Data
 {
@@ -23,6 +24,19 @@ namespace Codeplex.Data
 
         public static int ExecuteNonQuery(IDbConnection connection, string query, object parameter = null)
         {
+            if (connection == null) throw new ArgumentNullException("connection");
+            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
+            Contract.EndContractBlock();
+            
+            
+
+
+
+
+
+
+
+
             using (var exec = new DbExecutor(connection))
             {
                 return exec.ExecuteNonQuery(query, parameter);
