@@ -6,17 +6,17 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
 using System.Data.SqlServerCe;
 using Codeplex.Data;
-using Codeplex.Data.Extensions;
 using System.Data;
 using System.Diagnostics.Contracts;
-
-
 
 namespace DbExecutorTest
 {
     [TestClass]
     public class UnitTest1
     {
+        public TestContext TestContext { get; set; }
+        private string connectionString;
+
         [AssemblyInitialize]
         public static void AssemblyInitialize(TestContext tc)
         {
@@ -27,16 +27,14 @@ namespace DbExecutorTest
             };
         }
 
-        public TestContext TestContext { get; set; }
-
-        private string connectionString;
-
         [TestInitialize]
         public void Setup()
         {
+            var exec2 = new DbExecutor(null);
+
             connectionString = new SqlCeConnectionStringBuilder()
             {
-                DataSource = Path.Combine(TestContext.TestDir, "testdb")
+                DataSource = Path.Combine(TestContext.TestDir, "testdb.sdf")
             }.ToString();
 
             using (var en = new SqlCeEngine(connectionString))
@@ -73,8 +71,10 @@ create table TestTable(
         [TestMethod]
         public void TestMethod1()
         {
+
             
             
+
             using (var exec = new DbExecutor(new SqlCeConnection(connectionString)))
             {
                 var r = exec.ExecuteReader("select * from TestTable")

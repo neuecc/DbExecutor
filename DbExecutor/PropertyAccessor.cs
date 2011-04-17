@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics.Contracts;
 
-namespace Codeplex.Data.Internal
+namespace Codeplex.Data.Infrastructure
 {
     /// <summary>Represents PropertyInfo delegate.</summary>
     internal class PropertyAccessor<TTarget, TProperty> : IPropertyAccessor

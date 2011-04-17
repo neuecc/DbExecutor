@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics.Contracts;
 
-namespace Codeplex.Data.Internal
+namespace Codeplex.Data.Infrastructure
 {
     /// <summary>Represents PropertyInfo delegate.</summary>
     [ContractClass(typeof(IPropertyAccessorContract))]
@@ -15,7 +15,7 @@ namespace Codeplex.Data.Internal
     }
 
     [ContractClassFor(typeof(IPropertyAccessor))]
-    internal abstract class IPropertyAccessorContract : IPropertyAccessor
+    abstract class IPropertyAccessorContract : IPropertyAccessor
     {
         [Pure]
         public string Name

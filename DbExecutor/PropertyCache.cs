@@ -4,8 +4,9 @@ using System.Collections.ObjectModel;
 using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Reflection;
+using System.Collections.Concurrent;
 
-namespace Codeplex.Data.Internal
+namespace Codeplex.Data.Infrastructure
 {
     internal static class PropertyCache
     {
@@ -16,19 +17,22 @@ namespace Codeplex.Data.Internal
             Contract.Requires(targetType != null);
             Contract.Ensures(Contract.Result<PropertyCollection>() != null);
 
-            PropertyCollection accessors;
-            if (!propertyCache.TryGetValue(targetType, out accessors))
+            lock (propertyCache)
             {
-                var query = targetType
-                  .GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.SetProperty)
-                  .Select(pi => pi.ToAccessor());
+                PropertyCollection accessors;
+                if (!propertyCache.TryGetValue(targetType, out accessors))
+                {
+                    var query = targetType
+                      .GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.SetProperty)
+                      .Select(pi => pi.ToAccessor());
 
-                accessors = new PropertyCollection(query);
-                propertyCache.Add(targetType, accessors);
-            };
+                    accessors = new PropertyCollection(query);
+                    propertyCache.Add(targetType, accessors);
+                };
 
-            Contract.Assume(accessors != null);
-            return accessors;
+                Contract.Assume(accessors != null);
+                return accessors;
+            }
         }
     }
 
@@ -54,28 +58,22 @@ namespace Codeplex.Data.Internal
         {
             Contract.Requires(propertyInfo != null);
             Contract.Ensures(Contract.Result<IPropertyAccessor>() != null);
+            Contract.Assume(typeof(Func<,>).IsGenericTypeDefinition);
+            Contract.Assume(typeof(Func<,>).GetGenericArguments().Length == 2);
+            Contract.Assume(typeof(Action<,>).IsGenericTypeDefinition);
+            Contract.Assume(typeof(Action<,>).GetGenericArguments().Length == 2);
+            Contract.Assume(typeof(PropertyAccessor<,>).IsGenericTypeDefinition);
+            Contract.Assume(typeof(PropertyAccessor<,>).GetGenericArguments().Length == 2);
 
-            var func = typeof(Func<,>);
-            Contract.Assume(func.IsGenericTypeDefinition);
-            Contract.Assume(func.GetGenericArguments().Length == 2);
-
-            var getterType = func.MakeGenericType(propertyInfo.DeclaringType, propertyInfo.PropertyType);
+            var getterType = typeof(Func<,>).MakeGenericType(propertyInfo.DeclaringType, propertyInfo.PropertyType);
             var getMethod = propertyInfo.GetGetMethod();
             var getter = (getMethod != null) ? Delegate.CreateDelegate(getterType, getMethod) : null;
-
-            var action = typeof(Action<,>);
-            Contract.Assume(action.IsGenericTypeDefinition);
-            Contract.Assume(action.GetGenericArguments().Length == 2);
 
             var setterType = typeof(Action<,>).MakeGenericType(propertyInfo.DeclaringType, propertyInfo.PropertyType);
             var setMethod = propertyInfo.GetSetMethod();
             var setter = (setMethod != null) ? Delegate.CreateDelegate(setterType, setMethod) : null;
 
-            var propAccessor = typeof(PropertyAccessor<,>);
-            Contract.Assume(propAccessor.IsGenericTypeDefinition);
-            Contract.Assume(propAccessor.GetGenericArguments().Length == 2);
-
-            var propertyType = propAccessor.MakeGenericType(propertyInfo.DeclaringType, propertyInfo.PropertyType);
+            var propertyType = typeof(PropertyAccessor<,>).MakeGenericType(propertyInfo.DeclaringType, propertyInfo.PropertyType);
             return (IPropertyAccessor)Activator.CreateInstance(propertyType, propertyInfo.Name, getter, setter);
         }
     }

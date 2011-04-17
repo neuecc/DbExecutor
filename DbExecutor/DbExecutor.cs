@@ -5,7 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Diagnostics.Contracts;
-using Codeplex.Data.Internal;
+using Codeplex.Data.Infrastructure;
 
 namespace Codeplex.Data
 {
@@ -14,7 +14,7 @@ namespace Codeplex.Data
     {
         readonly IDbConnection connection;
         // Transaction
-        readonly bool isUseTransaction = false;
+        readonly bool isUseTransaction;
         readonly IsolationLevel isolationLevel;
         IDbTransaction transaction;
         bool isTransactionCompleted = false;
@@ -26,16 +26,17 @@ namespace Codeplex.Data
             Contract.Requires(connection != null);
 
             this.connection = connection;
+            this.isUseTransaction = false;
         }
 
         /// <summary>Use ransaction.</summary>
         /// <param name="connection">Database connection.</param>
         /// <param name="isolationLevel">Transaction IsolationLevel.</param>
         public DbExecutor(IDbConnection connection, IsolationLevel isolationLevel)
-            : this(connection)
         {
             Contract.Requires(connection != null);
 
+            this.connection = connection;
             this.isUseTransaction = true;
             this.isolationLevel = isolationLevel;
         }
@@ -182,7 +183,6 @@ namespace Codeplex.Data
         {
             Contract.Requires(!String.IsNullOrEmpty(tableName));
             Contract.Requires(insertItem != null);
-            Contract.EndContractBlock();
 
             var propNames = PropertyCache.GetAccessors(insertItem.GetType())
                 .Where(p => p.IsReadable)
