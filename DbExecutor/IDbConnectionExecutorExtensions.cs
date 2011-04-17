@@ -6,12 +6,12 @@ using System.Linq;
 using System.Reflection;
 using System.Diagnostics.Contracts;
 
-namespace Codeplex.Data
+namespace Codeplex.Data.Extensions
 {
-    public partial class DbExecutor : IDisposable
+    public static class IDbConnectionExecutorExtensions
     {
         /// <summary>Executes and returns the data records, when done dispose connection."</summary>
-        public static IEnumerable<IDataRecord> ExecuteReader(IDbConnection connection, string query, object parameter = null)
+        public static IEnumerable<IDataRecord> ExecuteReader(this IDbConnection connection, string query, object parameter = null)
         {
             using (var exec = new DbExecutor(connection))
             {
@@ -27,13 +27,6 @@ namespace Codeplex.Data
             if (connection == null) throw new ArgumentNullException("connection");
             if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
             Contract.EndContractBlock();
-            
-            
-
-
-
-
-
 
 
 

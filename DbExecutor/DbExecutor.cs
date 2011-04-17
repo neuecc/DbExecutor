@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Diagnostics.Contracts;
+using Codeplex.Data.Internal;
 
 namespace Codeplex.Data
 {
@@ -12,7 +13,10 @@ namespace Codeplex.Data
     public partial class DbExecutor : IDisposable
     {
         readonly IDbConnection connection;
-        readonly IDbTransaction transaction;
+        // Transaction
+        readonly bool isUseTransaction = false;
+        readonly IsolationLevel isolationLevel;
+        IDbTransaction transaction;
         bool isTransactionCompleted = false;
 
         /// <summary>Connect start.</summary>
@@ -22,27 +26,28 @@ namespace Codeplex.Data
             Contract.Requires(connection != null);
 
             this.connection = connection;
-            if (connection.State != ConnectionState.Open) connection.Open();
-            this.transaction = null;
         }
 
-        /// <summary>Connect start and begin transaction.</summary>
+        /// <summary>Use ransaction.</summary>
         /// <param name="connection">Database connection.</param>
         /// <param name="isolationLevel">Transaction IsolationLevel.</param>
         public DbExecutor(IDbConnection connection, IsolationLevel isolationLevel)
             : this(connection)
         {
-            if (connection == null) throw new ArgumentNullException("connection");
-            Contract.EndContractBlock();
+            Contract.Requires(connection != null);
 
-            this.transaction = connection.BeginTransaction(isolationLevel);
+            this.isUseTransaction = true;
+            this.isolationLevel = isolationLevel;
         }
 
-        private IDbCommand CreateCommand(string query, CommandType commandType, object parameter)
+        /// <summary>If connection is not open then open and create command.</summary>
+        private IDbCommand PrepareExecute(string query, CommandType commandType, object parameter)
         {
-            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
+            Contract.Requires(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IDbCommand>() != null);
-            Contract.EndContractBlock();
+
+            if (connection.State != ConnectionState.Open) connection.Open();
+            if (transaction == null && isUseTransaction) transaction = connection.BeginTransaction(isolationLevel);
 
             var command = connection.CreateCommand();
             command.CommandText = query;
@@ -51,6 +56,8 @@ namespace Codeplex.Data
             {
                 foreach (var p in PropertyCache.GetAccessors(parameter.GetType()))
                 {
+                    if (!p.IsReadable) continue;
+
                     var param = command.CreateParameter();
                     param.ParameterName = "@" + p.Name;
                     param.Value = p.GetValue(parameter);
@@ -64,9 +71,8 @@ namespace Codeplex.Data
 
         public IEnumerable<IDataRecord> ExecuteReader(string query, object parameter = null)
         {
-            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
+            Contract.Requires(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<IDataRecord>>() != null);
-            Contract.EndContractBlock();
 
             return ExecuteReader(query, CommandType.Text, parameter);
         }
@@ -78,11 +84,10 @@ namespace Codeplex.Data
         /// <returns>Query results. This is lazy evaluation.</returns>
         public IEnumerable<IDataRecord> ExecuteReader(string query, CommandType commandType, object parameter = null)
         {
-            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
+            Contract.Requires(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<IDataRecord>>() != null);
-            Contract.EndContractBlock();
 
-            using (var command = CreateCommand(query, commandType, parameter))
+            using (var command = PrepareExecute(query, commandType, parameter))
             using (var reader = command.ExecuteReader())
             {
                 while (reader.Read()) yield return reader;
@@ -93,18 +98,16 @@ namespace Codeplex.Data
         /// <summary>Executes and returns the number of rows affected."</summary>
         public int ExecuteNonQuery(string query, object parameter = null)
         {
-            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
-            Contract.EndContractBlock();
+            Contract.Requires(!String.IsNullOrEmpty(query));
 
             return ExecuteNonQuery(query, CommandType.Text, parameter);
         }
 
         public int ExecuteNonQuery(string query, CommandType commandType, object parameter = null)
         {
-            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
-            Contract.EndContractBlock();
+            Contract.Requires(!String.IsNullOrEmpty(query));
 
-            using (var command = CreateCommand(query, commandType, parameter))
+            using (var command = PrepareExecute(query, commandType, parameter))
             {
                 return command.ExecuteNonQuery();
             }
@@ -117,9 +120,8 @@ namespace Codeplex.Data
         /// <returns>Query results.</returns>
         public T ExecuteScalar<T>(string query, object parameter = null)
         {
-            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
+            Contract.Requires(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<T>() != null);
-            Contract.EndContractBlock();
 
             return ExecuteScalar<T>(query, CommandType.Text, parameter);
         }
@@ -127,11 +129,10 @@ namespace Codeplex.Data
         /// <summary>Executes and returns the first column.</summary>
         public T ExecuteScalar<T>(string query, CommandType commandType, object parameter = null)
         {
-            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
+            Contract.Requires(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<T>() != null);
-            Contract.EndContractBlock();
 
-            using (var command = CreateCommand(query, commandType, parameter))
+            using (var command = PrepareExecute(query, commandType, parameter))
             {
                 var result = (T)command.ExecuteScalar();
 
@@ -147,18 +148,16 @@ namespace Codeplex.Data
         /// <returns>Query results. This is lazy evaluation.</returns>
         public IEnumerable<T> SelectTo<T>(string query, object parameter = null) where T : new()
         {
-            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
+            Contract.Requires(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
-            Contract.EndContractBlock();
 
             return SelectTo<T>(query, CommandType.Text, parameter);
         }
 
         public IEnumerable<T> SelectTo<T>(string query, CommandType commandType, object parameter = null) where T : new()
         {
-            if (string.IsNullOrEmpty(query)) throw new ArgumentException("query");
+            Contract.Requires(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
-            Contract.EndContractBlock();
 
             var accessors = PropertyCache.GetAccessors(typeof(T));
             return ExecuteReader(query, parameter)
@@ -170,7 +169,7 @@ namespace Codeplex.Data
                         if (dr.IsDBNull(i)) continue;
 
                         var accessor = accessors[dr.GetName(i)];
-                        if (accessor != null) accessor.SetValue(result, dr[i]);
+                        if (accessor != null && accessor.IsWritable) accessor.SetValue(result, dr[i]);
                     }
                     return result;
                 });
@@ -181,13 +180,15 @@ namespace Codeplex.Data
         /// <param name="insertItem">Table's column name extracted from PropertyName.</param>
         public void InsertTo(string tableName, object insertItem)
         {
-            if (string.IsNullOrEmpty(tableName)) throw new ArgumentException("tableName");
-            if (insertItem == null) throw new ArgumentNullException("insertItem");
+            Contract.Requires(!String.IsNullOrEmpty(tableName));
+            Contract.Requires(insertItem != null);
             Contract.EndContractBlock();
 
-            var accessors = PropertyCache.GetAccessors(insertItem.GetType());
-            var column = string.Join(", ", accessors.Select(p => p.Name));
-            var data = string.Join(", ", accessors.Select(p => "@" + p.Name));
+            var propNames = PropertyCache.GetAccessors(insertItem.GetType())
+                .Where(p => p.IsReadable)
+                .ToArray();
+            var column = string.Join(", ", propNames.Select(p => p.Name));
+            var data = string.Join(", ", propNames.Select(p => "@" + p.Name));
 
             var query = string.Format("insert into {0} ({1}) values ({2})", tableName, column, data);
 

@@ -1,44 +1,8 @@
 ﻿using System;
-using System.Collections.ObjectModel;
 using System.Diagnostics.Contracts;
 
-namespace Codeplex.Data
+namespace Codeplex.Data.Internal
 {
-    #region IPropertyAccessor contract binding
-    /// <summary>Represents PropertyInfo delegate.</summary>
-    [ContractClass(typeof(IPropertyAccessorContract))]
-    internal partial interface IPropertyAccessor
-    {
-        string Name { get; }
-        object GetValue(object target);
-        void SetValue(object target, object value);
-    }
-
-    [ContractClassFor(typeof(IPropertyAccessor))]
-    abstract class IPropertyAccessorContract : IPropertyAccessor
-    {
-        [Pure]
-        public string Name
-        {
-            get
-            {
-                Contract.Ensures(!string.IsNullOrEmpty(Contract.Result<string>()));
-                throw new NotImplementedException();
-            }
-        }
-
-        public object GetValue(object target)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void SetValue(object target, object value)
-        {
-            throw new NotImplementedException();
-        }
-    }
-    #endregion
-
     /// <summary>Represents PropertyInfo delegate.</summary>
     internal class PropertyAccessor<TTarget, TProperty> : IPropertyAccessor
     {
@@ -48,8 +12,7 @@ namespace Codeplex.Data
 
         public PropertyAccessor(string name, Func<TTarget, TProperty> getter, Action<TTarget, TProperty> setter)
         {
-            if (string.IsNullOrEmpty(name)) throw new ArgumentException("name");
-            Contract.EndContractBlock();
+            Contract.Requires(!String.IsNullOrEmpty(name));
 
             this.name = name;
             this.getter = getter;
@@ -63,12 +26,26 @@ namespace Codeplex.Data
 
         public object GetValue(object target)
         {
+            if (getter == null) throw new InvalidOperationException("not readable");
+
             return this.getter((TTarget)target);
         }
 
         public void SetValue(object target, object value)
         {
+            if (setter == null) throw new InvalidOperationException("not writable");
+
             this.setter((TTarget)target, (TProperty)value);
+        }
+
+        public bool IsReadable
+        {
+            get { return getter != null; }
+        }
+
+        public bool IsWritable
+        {
+            get { return setter != null; }
         }
 
         [ContractInvariantMethod]
