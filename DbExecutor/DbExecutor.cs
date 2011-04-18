@@ -55,7 +55,7 @@ namespace Codeplex.Data
             command.CommandType = commandType;
             if (parameter != null)
             {
-                foreach (var p in PropertyCache.GetAccessors(parameter.GetType()))
+                foreach (var p in PropertyCache.Lookup(parameter.GetType()))
                 {
                     if (!p.IsReadable) continue;
 
@@ -160,7 +160,7 @@ namespace Codeplex.Data
             Contract.Requires(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
 
-            var accessors = PropertyCache.GetAccessors(typeof(T));
+            var accessors = PropertyCache.Lookup(typeof(T));
             return ExecuteReader(query, parameter)
                 .Select(dr =>
                 {
@@ -184,7 +184,7 @@ namespace Codeplex.Data
             Contract.Requires(!String.IsNullOrEmpty(tableName));
             Contract.Requires(insertItem != null);
 
-            var propNames = PropertyCache.GetAccessors(insertItem.GetType())
+            var propNames = PropertyCache.Lookup(insertItem.GetType())
                 .Where(p => p.IsReadable)
                 .ToArray();
             var column = string.Join(", ", propNames.Select(p => p.Name));

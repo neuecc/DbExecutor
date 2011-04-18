@@ -12,7 +12,7 @@ namespace Codeplex.Data.Infrastructure
     {
         static readonly Dictionary<Type, PropertyCollection> propertyCache = new Dictionary<Type, PropertyCollection>();
 
-        public static PropertyCollection GetAccessors(Type targetType)
+        public static PropertyCollection Lookup(Type targetType)
         {
             Contract.Requires(targetType != null);
             Contract.Ensures(Contract.Result<PropertyCollection>() != null);
@@ -36,18 +36,39 @@ namespace Codeplex.Data.Infrastructure
         }
     }
 
-    internal class PropertyCollection : KeyedCollection<string, IPropertyAccessor>
+    [Pure]
+    internal class PropertyCollection : IEnumerable<IPropertyAccessor>
     {
+        Dictionary<string, IPropertyAccessor> accessors;
+
         public PropertyCollection(IEnumerable<IPropertyAccessor> accessors)
         {
             Contract.Requires(accessors != null);
 
-            foreach (var item in accessors) Add(item);
+            this.accessors = accessors.ToDictionary(p => p.Name);
         }
 
-        protected override string GetKeyForItem(IPropertyAccessor item)
+        public IPropertyAccessor this[string name]
         {
-            return item.Name;
+            get
+            {
+                Contract.Requires(name != null);
+
+                IPropertyAccessor accessor;
+                return accessors.TryGetValue(name, out accessor)
+                    ? accessor
+                    : null;
+            }
+        }
+
+        public IEnumerator<IPropertyAccessor> GetEnumerator()
+        {
+            return accessors.Values.GetEnumerator();
+        }
+
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 
