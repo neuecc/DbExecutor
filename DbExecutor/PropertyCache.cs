@@ -95,7 +95,7 @@ namespace Codeplex.Data.Infrastructure
             var setter = (setMethod != null) ? Delegate.CreateDelegate(setterType, setMethod) : null;
 
             var propertyType = typeof(PropertyAccessor<,>).MakeGenericType(propertyInfo.DeclaringType, propertyInfo.PropertyType);
-            return (IPropertyAccessor)Activator.CreateInstance(propertyType, propertyInfo.Name, getter, setter);
+            return (IPropertyAccessor)Activator.CreateInstance(propertyType, propertyInfo.DeclaringType, propertyInfo.Name, getter, setter);
         }
     }
 }

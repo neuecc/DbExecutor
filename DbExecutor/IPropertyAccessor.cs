@@ -8,6 +8,7 @@ namespace Codeplex.Data.Infrastructure
     internal partial interface IPropertyAccessor
     {
         string Name { get; }
+        Type DeclaringType { get; }
         object GetValue(object target);
         void SetValue(object target, object value);
         bool IsReadable { get; }
@@ -23,6 +24,15 @@ namespace Codeplex.Data.Infrastructure
             get
             {
                 Contract.Ensures(!string.IsNullOrEmpty(Contract.Result<string>()));
+                throw new NotImplementedException();
+            }
+        }
+
+        public Type DeclaringType
+        {
+            get
+            {
+                Contract.Ensures(Contract.Result<Type>() != null);
                 throw new NotImplementedException();
             }
         }

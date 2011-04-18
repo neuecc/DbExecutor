@@ -6,14 +6,17 @@ namespace Codeplex.Data.Infrastructure
     /// <summary>Represents PropertyInfo delegate.</summary>
     internal class PropertyAccessor<TTarget, TProperty> : IPropertyAccessor
     {
+        readonly Type type;
         readonly string name;
         readonly Func<TTarget, TProperty> getter;
         readonly Action<TTarget, TProperty> setter;
 
-        public PropertyAccessor(string name, Func<TTarget, TProperty> getter, Action<TTarget, TProperty> setter)
+        public PropertyAccessor(Type declaringType, string name, Func<TTarget, TProperty> getter, Action<TTarget, TProperty> setter)
         {
             Contract.Requires(!String.IsNullOrEmpty(name));
+            Contract.Requires(declaringType != null);
 
+            this.type = declaringType;
             this.name = name;
             this.getter = getter;
             this.setter = setter;
@@ -22,6 +25,11 @@ namespace Codeplex.Data.Infrastructure
         public string Name
         {
             get { return name; }
+        }
+
+        public Type DeclaringType
+        {
+            get { return type; }
         }
 
         public object GetValue(object target)
@@ -52,6 +60,7 @@ namespace Codeplex.Data.Infrastructure
         void ObjectInvariant()
         {
             Contract.Invariant(!String.IsNullOrEmpty(name));
+            Contract.Invariant(type != null);
         }
     }
 }
