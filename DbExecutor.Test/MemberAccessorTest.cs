@@ -92,7 +92,7 @@ namespace DbExecutorTest
         {
             var accessors = Enumerable.Concat(
                     typeof(TestMockClass).GetProperties().Select(pi => new MemberAccessor(pi)),
-                    typeof(TestMockClass).GetFields().Select(pi => new MemberAccessor(pi)))
+                    typeof(TestMockClass).GetFields().Select(fi => new MemberAccessor(fi)))
                 .OrderBy(x => x.Name)
                 .ToArray();
 
@@ -132,7 +132,7 @@ namespace DbExecutorTest
         {
             var accessors = Enumerable.Concat(
                     typeof(TestMockStruct).GetProperties().Select(pi => new MemberAccessor(pi)),
-                    typeof(TestMockStruct).GetFields().Select(pi => new MemberAccessor(pi)))
+                    typeof(TestMockStruct).GetFields().Select(fi => new MemberAccessor(fi)))
                 .OrderBy(x => x.Name)
                 .ToArray();
 
@@ -165,6 +165,22 @@ namespace DbExecutorTest
             write.IsWritable.Is(true);
             write.SetValue(ref target, "test");
             Assert.AreEqual("test", ((TestMockStruct)target).AsDynamic().hiddenField);
+        }
+
+        [TestMethod]
+        public void AnonymousType()
+        {
+            var anon = new { P1 = "HOGE", P2 = 1000 };
+            var xs = anon.GetType().GetProperties().Select(p => new MemberAccessor(p)).OrderBy(x => x.Name).ToArray();
+
+            xs.Length.Is(2);
+            xs.Select(a => a.DelaringType).All(t => t == anon.GetType());
+            xs.All(a => a.IsReadable);
+            xs.All(a => !a.IsWritable);
+
+            object an = anon;
+            xs[0].GetValue(ref an).Is("HOGE");
+            xs[1].GetValue(ref an).Is(1000);
         }
     }
 }
