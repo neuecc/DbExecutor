@@ -22,7 +22,6 @@ namespace Codeplex.Data.Infrastructure
         public MemberAccessor(PropertyInfo info)
         {
             Contract.Requires(info != null);
-            Contract.Requires(!String.IsNullOrEmpty(info.Name));
 
             this.Name = info.Name;
             this.DelaringType = info.DeclaringType;
@@ -33,7 +32,6 @@ namespace Codeplex.Data.Infrastructure
         public MemberAccessor(FieldInfo info)
         {
             Contract.Requires(info != null);
-            Contract.Requires(!String.IsNullOrEmpty(info.Name));
 
             this.Name = info.Name;
             this.DelaringType = info.DeclaringType;
@@ -43,20 +41,24 @@ namespace Codeplex.Data.Infrastructure
 
         public object GetValue(ref object target)
         {
+            Contract.Requires(target != null);
+            if (!IsReadable) throw new InvalidOperationException("is not readable member");
+
             return getValue(ref target);
         }
 
         public void SetValue(ref object target, object value)
         {
+            Contract.Requires(target != null);
+            if (!IsWritable) throw new InvalidOperationException("is not writable member");
+
             setValue(ref target, value);
         }
 
         // (ref object x) => (object)((T)x).name
-        FuncRef<object, object> CreateGetValue(Type type, string name)
+        [ContractVerification(false)]
+        static FuncRef<object, object> CreateGetValue(Type type, string name)
         {
-            Contract.Requires(type != null);
-            Contract.Requires(!String.IsNullOrEmpty(name));
-
             var x = Expression.Parameter(typeof(object).MakeByRefType(), "x");
 
             var func = Expression.Lambda<FuncRef<object, object>>(
@@ -71,11 +73,9 @@ namespace Codeplex.Data.Infrastructure
         }
 
         // (ref object x, object v) => ((T)x).name = (U)v
-        ActionRef<object, object> CreateSetValue(Type type, string name)
+        [ContractVerification(false)]
+        static ActionRef<object, object> CreateSetValue(Type type, string name)
         {
-            Contract.Requires(type != null);
-            Contract.Requires(!String.IsNullOrEmpty(name));
-
             var x = Expression.Parameter(typeof(object).MakeByRefType(), "x");
             var v = Expression.Parameter(typeof(object), "v");
 

@@ -63,6 +63,7 @@ namespace Codeplex.Data
                 {
                     if (!p.IsReadable) continue;
 
+                    Contract.Assume(parameter != null);
                     var param = command.CreateParameter();
                     param.ParameterName = p.Name;
                     param.Value = p.GetValue(ref parameter);
