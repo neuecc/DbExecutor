@@ -42,7 +42,7 @@ namespace Codeplex.Data
         }
 
         /// <summary>If connection is not open then open and create command.</summary>
-        private IDbCommand PrepareExecute(string query, CommandType commandType, object parameter)
+        private IDbCommand PrepareExecute(string query, CommandType commandType, params object[] parameters)
         {
             Contract.Requires(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IDbCommand>() != null);
@@ -53,15 +53,19 @@ namespace Codeplex.Data
             var command = connection.CreateCommand();
             command.CommandText = query;
             command.CommandType = commandType;
-            if (parameter != null)
+
+            for (int i = 0; i < parameters.Length; i++)
             {
+                var parameter = parameters[i];
+                if (parameter == null) continue;
+
                 foreach (var p in PropertyCache.Lookup(parameter.GetType()))
                 {
                     if (!p.IsReadable) continue;
 
                     var param = command.CreateParameter();
-                    param.ParameterName = "@" + p.Name;
-                    param.Value = p.GetValue(parameter);
+                    param.ParameterName = p.Name;
+                    param.Value = p.GetValue(ref parameter);
                     command.Parameters.Add(param);
                 }
             }
@@ -147,15 +151,15 @@ namespace Codeplex.Data
         /// <param name="query">SQL code.</param>
         /// <param name="parameter">PropertyName parameterized to @PropertyName. if null then no use parameter.</param>
         /// <returns>Query results. This is lazy evaluation.</returns>
-        public IEnumerable<T> SelectTo<T>(string query, object parameter = null) where T : new()
+        public IEnumerable<T> Select<T>(string query, object parameter = null) where T : new()
         {
             Contract.Requires(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
 
-            return SelectTo<T>(query, CommandType.Text, parameter);
+            return Select<T>(query, CommandType.Text, parameter);
         }
 
-        public IEnumerable<T> SelectTo<T>(string query, CommandType commandType, object parameter = null) where T : new()
+        public IEnumerable<T> Select<T>(string query, CommandType commandType, object parameter = null) where T : new()
         {
             Contract.Requires(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
@@ -164,22 +168,22 @@ namespace Codeplex.Data
             return ExecuteReader(query, parameter)
                 .Select(dr =>
                 {
-                    var result = new T();
+                    object result = new T();
                     for (int i = 0; i < dr.FieldCount; i++)
                     {
                         if (dr.IsDBNull(i)) continue;
 
                         var accessor = accessors[dr.GetName(i)];
-                        if (accessor != null && accessor.IsWritable) accessor.SetValue(result, dr[i]);
+                        if (accessor != null && accessor.IsWritable) accessor.SetValue(ref result, dr[i]);
                     }
-                    return result;
+                    return (T)result;
                 });
         }
 
         /// <summary>Insert by object's PropertyName."</summary>
         /// <param name="tableName">Target database's table.</param>
         /// <param name="insertItem">Table's column name extracted from PropertyName.</param>
-        public void InsertTo(string tableName, object insertItem)
+        public int Insert(string tableName, object insertItem)
         {
             Contract.Requires(!String.IsNullOrEmpty(tableName));
             Contract.Requires(insertItem != null);
@@ -193,7 +197,43 @@ namespace Codeplex.Data
             var query = string.Format("insert into {0} ({1}) values ({2})", tableName, column, data);
 
             Contract.Assume(query.Length > 0);
-            ExecuteNonQuery(query, insertItem);
+            return ExecuteNonQuery(query, insertItem);
+        }
+
+        public int Update(string tableName, object whereCondition, object updateParameter)
+        {
+            Contract.Requires(!String.IsNullOrEmpty(tableName));
+            Contract.Requires(whereCondition != null);
+            Contract.Requires(updateParameter != null);
+
+            var update = string.Join(", ", PropertyCache.Lookup(updateParameter.GetType())
+                .Where(p => p.IsReadable)
+                .Select(p => p.Name + " = " + "@" + p.Name));
+
+            var where = string.Join(" and ", PropertyCache.Lookup(whereCondition.GetType())
+                .Select(p => p.Name + " = " + p.GetValue(ref whereCondition)));
+
+            var query = string.Format("update {0} set {1} where {2}", tableName, update, where);
+
+            Contract.Assume(query.Length > 0);
+            using (var command = PrepareExecute(query, CommandType.Text, whereCondition, updateParameter))
+            {
+                return command.ExecuteNonQuery();
+            }
+        }
+
+        public int Delete(string tableName, object whereCondition)
+        {
+            Contract.Requires(!String.IsNullOrEmpty(tableName));
+            Contract.Requires(whereCondition != null);
+
+            var where = string.Join(" and ", PropertyCache.Lookup(whereCondition.GetType())
+                .Select(p => p.Name + " = " + p.GetValue(ref whereCondition)));
+
+            var query = string.Format("delete from {0} where {1}", tableName, where);
+
+            Contract.Assume(query.Length > 0);
+            return ExecuteNonQuery(query, whereCondition);
         }
 
         /// <summary>Commit transaction.</summary>

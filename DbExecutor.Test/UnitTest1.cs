@@ -30,8 +30,6 @@ namespace DbExecutorTest
         [TestInitialize]
         public void Setup()
         {
-            var exec2 = new DbExecutor(null);
-
             connectionString = new SqlCeConnectionStringBuilder()
             {
                 DataSource = Path.Combine(TestContext.TestDir, "testdb.sdf")
@@ -50,14 +48,14 @@ create table TestTable(
     Tako nvarchar(10)
 )");
 
-                exec.InsertTo("TestTable", new
+                exec.Insert("TestTable", new
                 {
                     Hoge = "aiueo",
                     Huga = 100,
                     Tako = "takotako"
                 });
 
-                exec.InsertTo("TestTable", new
+                exec.Insert("TestTable", new
                 {
                     Hoge = "なのこんぼ",
                     Huga = -1000,

@@ -1,0 +1,94 @@
+﻿using System;
+using System.Diagnostics.Contracts;
+using System.Reflection;
+using System.Linq.Expressions;
+
+namespace Codeplex.Data.Infrastructure
+{
+    // define ref delegate
+    public delegate void ActionRef<T1, T2>(ref T1 t1, T2 t2);
+    public delegate TR FuncRef<T1, TR>(ref T1 t1);
+
+    public class MemberAccessor
+    {
+        public Type DelaringType { get; private set; }
+        public string Name { get; private set; }
+        public bool IsReadable { get { return getValue != null; } }
+        public bool IsWritable { get { return setValue != null; } }
+
+        readonly FuncRef<object, object> getValue;
+        readonly ActionRef<object, object> setValue;
+
+        public MemberAccessor(PropertyInfo info)
+        {
+            Contract.Requires(info != null);
+            Contract.Requires(!String.IsNullOrEmpty(info.Name));
+
+            this.Name = info.Name;
+            this.DelaringType = info.DeclaringType;
+            this.getValue = info.CanRead ? CreateGetValue(DelaringType, Name) : null;
+            this.setValue = info.CanWrite ? CreateSetValue(DelaringType, Name) : null;
+        }
+
+        public MemberAccessor(FieldInfo info)
+        {
+            Contract.Requires(info != null);
+            Contract.Requires(!String.IsNullOrEmpty(info.Name));
+
+            this.Name = info.Name;
+            this.DelaringType = info.DeclaringType;
+            this.getValue = CreateGetValue(DelaringType, Name);
+            this.setValue = CreateSetValue(DelaringType, Name);
+        }
+
+        public object GetValue(ref object target)
+        {
+            return getValue(ref target);
+        }
+
+        public void SetValue(ref object target, object value)
+        {
+            setValue(ref target, value);
+        }
+
+        // (ref object x) => (object)((T)x).name
+        FuncRef<object, object> CreateGetValue(Type type, string name)
+        {
+            Contract.Requires(type != null);
+            Contract.Requires(!String.IsNullOrEmpty(name));
+
+            var x = Expression.Parameter(typeof(object).MakeByRefType(), "x");
+
+            var func = Expression.Lambda<FuncRef<object, object>>(
+                Expression.Convert(
+                    Expression.PropertyOrField(
+                        (type.IsValueType ? Expression.Unbox(x, type) : Expression.Convert(x, type)),
+                        name),
+                    typeof(object)),
+                x);
+
+            return func.Compile();
+        }
+
+        // (ref object x, object v) => ((T)x).name = (U)v
+        ActionRef<object, object> CreateSetValue(Type type, string name)
+        {
+            Contract.Requires(type != null);
+            Contract.Requires(!String.IsNullOrEmpty(name));
+
+            var x = Expression.Parameter(typeof(object).MakeByRefType(), "x");
+            var v = Expression.Parameter(typeof(object), "v");
+
+            var left = Expression.PropertyOrField(
+                (type.IsValueType ? Expression.Unbox(x, type) : Expression.Convert(x, type)),
+                name);
+            var right = Expression.Convert(v, left.Type);
+
+            var action = Expression.Lambda<ActionRef<object, object>>(
+                Expression.Assign(left, right),
+                x, v);
+
+            return action.Compile();
+        }
+    }
+}

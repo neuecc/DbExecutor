@@ -22,11 +22,14 @@ namespace Codeplex.Data.Infrastructure
                 PropertyCollection accessors;
                 if (!propertyCache.TryGetValue(targetType, out accessors))
                 {
-                    var query = targetType
+                    var properties = targetType
                       .GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.SetProperty)
-                      .Select(pi => pi.ToAccessor());
+                      .Select(pi => new MemberAccessor(pi));
 
-                    accessors = new PropertyCollection(query);
+                    var fields = targetType.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetField | BindingFlags.SetField)
+                      .Select(fi => new MemberAccessor(fi));
+
+                    accessors = new PropertyCollection(properties.Concat(fields));
                     propertyCache.Add(targetType, accessors);
                 };
 
@@ -37,31 +40,31 @@ namespace Codeplex.Data.Infrastructure
     }
 
     [Pure]
-    internal class PropertyCollection : IEnumerable<IPropertyAccessor>
+    internal class PropertyCollection : IEnumerable<MemberAccessor>
     {
-        Dictionary<string, IPropertyAccessor> accessors;
+        Dictionary<string, MemberAccessor> accessors;
 
-        public PropertyCollection(IEnumerable<IPropertyAccessor> accessors)
+        public PropertyCollection(IEnumerable<MemberAccessor> accessors)
         {
             Contract.Requires(accessors != null);
 
             this.accessors = accessors.ToDictionary(p => p.Name);
         }
 
-        public IPropertyAccessor this[string name]
+        public MemberAccessor this[string name]
         {
             get
             {
                 Contract.Requires(name != null);
 
-                IPropertyAccessor accessor;
+                MemberAccessor accessor;
                 return accessors.TryGetValue(name, out accessor)
                     ? accessor
                     : null;
             }
         }
 
-        public IEnumerator<IPropertyAccessor> GetEnumerator()
+        public IEnumerator<MemberAccessor> GetEnumerator()
         {
             return accessors.Values.GetEnumerator();
         }
@@ -69,33 +72,6 @@ namespace Codeplex.Data.Infrastructure
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
-        }
-    }
-
-    internal static class PropertyInfoExtensions
-    {
-        /// <summary>Make delegate accessor.</summary>
-        public static IPropertyAccessor ToAccessor(this PropertyInfo propertyInfo)
-        {
-            Contract.Requires(propertyInfo != null);
-            Contract.Ensures(Contract.Result<IPropertyAccessor>() != null);
-            Contract.Assume(typeof(Func<,>).IsGenericTypeDefinition);
-            Contract.Assume(typeof(Func<,>).GetGenericArguments().Length == 2);
-            Contract.Assume(typeof(Action<,>).IsGenericTypeDefinition);
-            Contract.Assume(typeof(Action<,>).GetGenericArguments().Length == 2);
-            Contract.Assume(typeof(PropertyAccessor<,>).IsGenericTypeDefinition);
-            Contract.Assume(typeof(PropertyAccessor<,>).GetGenericArguments().Length == 2);
-
-            var getterType = typeof(Func<,>).MakeGenericType(propertyInfo.DeclaringType, propertyInfo.PropertyType);
-            var getMethod = propertyInfo.GetGetMethod();
-            var getter = (getMethod != null) ? Delegate.CreateDelegate(getterType, getMethod) : null;
-
-            var setterType = typeof(Action<,>).MakeGenericType(propertyInfo.DeclaringType, propertyInfo.PropertyType);
-            var setMethod = propertyInfo.GetSetMethod();
-            var setter = (setMethod != null) ? Delegate.CreateDelegate(setterType, setMethod) : null;
-
-            var propertyType = typeof(PropertyAccessor<,>).MakeGenericType(propertyInfo.DeclaringType, propertyInfo.PropertyType);
-            return (IPropertyAccessor)Activator.CreateInstance(propertyType, propertyInfo.DeclaringType, propertyInfo.Name, getter, setter);
         }
     }
 }

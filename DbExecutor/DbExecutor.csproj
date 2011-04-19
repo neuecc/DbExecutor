@@ -109,9 +109,8 @@
     <Compile Include="DbExecutor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DbExecutor.Static.cs" />
-    <Compile Include="PropertyAccessor.cs" />
+    <Compile Include="MemberAccessor.cs" />
     <Compile Include="PropertyCache.cs" />
-    <Compile Include="IPropertyAccessor.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0">
