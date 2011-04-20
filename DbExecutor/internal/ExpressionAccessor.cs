@@ -3,13 +3,10 @@ using System.Diagnostics.Contracts;
 using System.Reflection;
 using System.Linq.Expressions;
 
-namespace Codeplex.Data.Infrastructure
+namespace Codeplex.Data.Internal
 {
-    // define ref delegate
-    public delegate void ActionRef<T1, T2>(ref T1 t1, T2 t2);
-    public delegate TR FuncRef<T1, TR>(ref T1 t1);
-
-    public class MemberAccessor
+    /// <summary>Delegate accessor created from expression tree.</summary>
+    internal class ExpressionAccessor : IMemberAccessor
     {
         public Type DelaringType { get; private set; }
         public string Name { get; private set; }
@@ -19,7 +16,7 @@ namespace Codeplex.Data.Infrastructure
         readonly FuncRef<object, object> getValue;
         readonly ActionRef<object, object> setValue;
 
-        public MemberAccessor(PropertyInfo info)
+        public ExpressionAccessor(PropertyInfo info)
         {
             Contract.Requires(info != null);
 
@@ -29,7 +26,7 @@ namespace Codeplex.Data.Infrastructure
             this.setValue = info.CanWrite ? CreateSetValue(DelaringType, Name) : null;
         }
 
-        public MemberAccessor(FieldInfo info)
+        public ExpressionAccessor(FieldInfo info)
         {
             Contract.Requires(info != null);
 
@@ -41,7 +38,6 @@ namespace Codeplex.Data.Infrastructure
 
         public object GetValue(ref object target)
         {
-            Contract.Requires(target != null);
             if (!IsReadable) throw new InvalidOperationException("is not readable member");
 
             return getValue(ref target);
@@ -49,7 +45,6 @@ namespace Codeplex.Data.Infrastructure
 
         public void SetValue(ref object target, object value)
         {
-            Contract.Requires(target != null);
             if (!IsWritable) throw new InvalidOperationException("is not writable member");
 
             setValue(ref target, value);

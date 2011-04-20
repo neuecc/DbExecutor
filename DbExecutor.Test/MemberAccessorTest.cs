@@ -8,7 +8,7 @@ using System.Data.SqlServerCe;
 using Codeplex.Data;
 using System.Data;
 using System.Diagnostics.Contracts;
-using Codeplex.Data.Infrastructure;
+using Codeplex.Data.Internal;
 
 namespace DbExecutorTest
 {
@@ -91,8 +91,8 @@ namespace DbExecutorTest
         public void ClassTest()
         {
             var accessors = Enumerable.Concat(
-                    typeof(TestMockClass).GetProperties().Select(pi => new MemberAccessor(pi)),
-                    typeof(TestMockClass).GetFields().Select(fi => new MemberAccessor(fi)))
+                    typeof(TestMockClass).GetProperties().Select(pi => new ExpressionAccessor(pi)),
+                    typeof(TestMockClass).GetFields().Select(fi => new ExpressionAccessor(fi)))
                 .OrderBy(x => x.Name)
                 .ToArray();
 
@@ -131,8 +131,8 @@ namespace DbExecutorTest
         public void StructTest()
         {
             var accessors = Enumerable.Concat(
-                    typeof(TestMockStruct).GetProperties().Select(pi => new MemberAccessor(pi)),
-                    typeof(TestMockStruct).GetFields().Select(fi => new MemberAccessor(fi)))
+                    typeof(TestMockStruct).GetProperties().Select(pi => new ExpressionAccessor(pi)),
+                    typeof(TestMockStruct).GetFields().Select(fi => new ExpressionAccessor(fi)))
                 .OrderBy(x => x.Name)
                 .ToArray();
 
@@ -171,7 +171,7 @@ namespace DbExecutorTest
         public void AnonymousType()
         {
             var anon = new { P1 = "HOGE", P2 = 1000 };
-            var xs = anon.GetType().GetProperties().Select(p => new MemberAccessor(p)).OrderBy(x => x.Name).ToArray();
+            var xs = anon.GetType().GetProperties().Select(p => new ExpressionAccessor(p)).OrderBy(x => x.Name).ToArray();
 
             xs.Length.Is(2);
             xs.Select(a => a.DelaringType).All(t => t == anon.GetType());

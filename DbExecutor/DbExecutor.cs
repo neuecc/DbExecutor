@@ -5,7 +5,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 using System.Diagnostics.Contracts;
-using Codeplex.Data.Infrastructure;
+using Codeplex.Data.Internal;
 
 namespace Codeplex.Data
 {
@@ -24,7 +24,7 @@ namespace Codeplex.Data
         public DbExecutor(IDbConnection connection)
         {
             Contract.Requires(connection != null);
-
+            
             this.connection = connection;
             this.isUseTransaction = false;
         }
@@ -59,7 +59,7 @@ namespace Codeplex.Data
                 var parameter = parameters[i];
                 if (parameter == null) continue;
 
-                foreach (var p in PropertyCache.Lookup(parameter.GetType()))
+                foreach (var p in AccessorCache.Lookup(parameter.GetType()))
                 {
                     if (!p.IsReadable) continue;
 
@@ -165,7 +165,7 @@ namespace Codeplex.Data
             Contract.Requires(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
 
-            var accessors = PropertyCache.Lookup(typeof(T));
+            var accessors = AccessorCache.Lookup(typeof(T));
             return ExecuteReader(query, parameter)
                 .Select(dr =>
                 {
@@ -189,7 +189,7 @@ namespace Codeplex.Data
             Contract.Requires(!String.IsNullOrEmpty(tableName));
             Contract.Requires(insertItem != null);
 
-            var propNames = PropertyCache.Lookup(insertItem.GetType())
+            var propNames = AccessorCache.Lookup(insertItem.GetType())
                 .Where(p => p.IsReadable)
                 .ToArray();
             var column = string.Join(", ", propNames.Select(p => p.Name));
@@ -207,11 +207,11 @@ namespace Codeplex.Data
             Contract.Requires(whereCondition != null);
             Contract.Requires(updateParameter != null);
 
-            var update = string.Join(", ", PropertyCache.Lookup(updateParameter.GetType())
+            var update = string.Join(", ", AccessorCache.Lookup(updateParameter.GetType())
                 .Where(p => p.IsReadable)
                 .Select(p => p.Name + " = " + "@" + p.Name));
 
-            var where = string.Join(" and ", PropertyCache.Lookup(whereCondition.GetType())
+            var where = string.Join(" and ", AccessorCache.Lookup(whereCondition.GetType())
                 .Select(p => p.Name + " = " + p.GetValue(ref whereCondition)));
 
             var query = string.Format("update {0} set {1} where {2}", tableName, update, where);
@@ -228,7 +228,7 @@ namespace Codeplex.Data
             Contract.Requires(!String.IsNullOrEmpty(tableName));
             Contract.Requires(whereCondition != null);
 
-            var where = string.Join(" and ", PropertyCache.Lookup(whereCondition.GetType())
+            var where = string.Join(" and ", AccessorCache.Lookup(whereCondition.GetType())
                 .Select(p => p.Name + " = " + p.GetValue(ref whereCondition)));
 
             var query = string.Format("delete from {0} where {1}", tableName, where);
