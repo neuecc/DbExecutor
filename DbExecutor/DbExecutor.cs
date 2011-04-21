@@ -66,7 +66,7 @@ namespace Codeplex.Data
                     Contract.Assume(parameter != null);
                     var param = command.CreateParameter();
                     param.ParameterName = p.Name;
-                    param.Value = p.GetValue(ref parameter);
+                    param.Value = p.GetValue(parameter);
                     command.Parameters.Add(param);
                 }
             }
@@ -169,13 +169,15 @@ namespace Codeplex.Data
             return ExecuteReader(query, parameter)
                 .Select(dr =>
                 {
+                    // if T is ValueType then can't set SetValue
+                    // must be boxed
                     object result = new T();
                     for (int i = 0; i < dr.FieldCount; i++)
                     {
                         if (dr.IsDBNull(i)) continue;
 
                         var accessor = accessors[dr.GetName(i)];
-                        if (accessor != null && accessor.IsWritable) accessor.SetValue(ref result, dr[i]);
+                        if (accessor != null && accessor.IsWritable) accessor.SetValue(result, dr[i]);
                     }
                     return (T)result;
                 });
@@ -212,7 +214,7 @@ namespace Codeplex.Data
                 .Select(p => p.Name + " = " + "@" + p.Name));
 
             var where = string.Join(" and ", AccessorCache.Lookup(whereCondition.GetType())
-                .Select(p => p.Name + " = " + p.GetValue(ref whereCondition)));
+                .Select(p => p.Name + " = " + p.GetValue(whereCondition)));
 
             var query = string.Format("update {0} set {1} where {2}", tableName, update, where);
 
@@ -229,7 +231,7 @@ namespace Codeplex.Data
             Contract.Requires<ArgumentNullException>(whereCondition != null);
 
             var where = string.Join(" and ", AccessorCache.Lookup(whereCondition.GetType())
-                .Select(p => p.Name + " = " + p.GetValue(ref whereCondition)));
+                .Select(p => p.Name + " = " + p.GetValue(whereCondition)));
 
             var query = string.Format("delete from {0} where {1}", tableName, where);
 

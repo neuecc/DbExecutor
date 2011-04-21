@@ -29,18 +29,18 @@ namespace Codeplex.Data.Internal
             this.accessor = new PropertyAccessor(propertyInfo);
         }
 
-        public object GetValue(ref object target)
+        public object GetValue(object target)
         {
             if (!IsReadable) throw new InvalidOperationException("is not readable member");
 
-            return accessor.GetValue(ref target);
+            return accessor.GetValue(target);
         }
 
-        public void SetValue(ref object target, object value)
+        public void SetValue(object target, object value)
         {
             if (!IsWritable) throw new InvalidOperationException("is not writable member");
 
-            accessor.SetValue(ref target, value);
+            accessor.SetValue(target, value);
         }
 
         class PropertyAccessor : IMemberAccessor
@@ -61,12 +61,12 @@ namespace Codeplex.Data.Internal
                 this.IsWritable = (info.GetSetMethod(false) != null);
             }
 
-            public object GetValue(ref object target)
+            public object GetValue(object target)
             {
                 return info.GetValue(target, null);
             }
 
-            public void SetValue(ref object target, object value)
+            public void SetValue(object target, object value)
             {
                 info.SetValue(target, value, null);
             }
@@ -90,12 +90,12 @@ namespace Codeplex.Data.Internal
                 this.IsWritable = !info.IsInitOnly;
             }
 
-            public object GetValue(ref object target)
+            public object GetValue(object target)
             {
                 return info.GetValue(target);
             }
 
-            public void SetValue(ref object target, object value)
+            public void SetValue(object target, object value)
             {
                 info.SetValue(target, value);
             }

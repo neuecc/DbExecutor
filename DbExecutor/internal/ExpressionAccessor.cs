@@ -13,8 +13,8 @@ namespace Codeplex.Data.Internal
         public bool IsReadable { get { return getValue != null; } }
         public bool IsWritable { get { return setValue != null; } }
 
-        readonly FuncRef<object, object> getValue;
-        readonly ActionRef<object, object> setValue;
+        readonly Func<object, object> getValue;
+        readonly Action<object, object> setValue;
 
         public ExpressionAccessor(PropertyInfo info)
         {
@@ -36,27 +36,27 @@ namespace Codeplex.Data.Internal
             this.setValue = (!info.IsInitOnly) ? CreateSetValue(DelaringType, Name) : null;
         }
 
-        public object GetValue(ref object target)
+        public object GetValue(object target)
         {
             if (!IsReadable) throw new InvalidOperationException("is not readable member");
 
-            return getValue(ref target);
+            return getValue(target);
         }
 
-        public void SetValue(ref object target, object value)
+        public void SetValue(object target, object value)
         {
             if (!IsWritable) throw new InvalidOperationException("is not writable member");
 
-            setValue(ref target, value);
+            setValue(target, value);
         }
 
-        // (ref object x) => (object)((T)x).name
+        // (object x) => (object)((T)x).name
         [ContractVerification(false)]
-        static FuncRef<object, object> CreateGetValue(Type type, string name)
+        static Func<object, object> CreateGetValue(Type type, string name)
         {
-            var x = Expression.Parameter(typeof(object).MakeByRefType(), "x");
+            var x = Expression.Parameter(typeof(object), "x");
 
-            var func = Expression.Lambda<FuncRef<object, object>>(
+            var func = Expression.Lambda<Func<object, object>>(
                 Expression.Convert(
                     Expression.PropertyOrField(
                         (type.IsValueType ? Expression.Unbox(x, type) : Expression.Convert(x, type)),
@@ -67,11 +67,11 @@ namespace Codeplex.Data.Internal
             return func.Compile();
         }
 
-        // (ref object x, object v) => ((T)x).name = (U)v
+        // (object x, object v) => ((T)x).name = (U)v
         [ContractVerification(false)]
-        static ActionRef<object, object> CreateSetValue(Type type, string name)
+        static Action<object, object> CreateSetValue(Type type, string name)
         {
-            var x = Expression.Parameter(typeof(object).MakeByRefType(), "x");
+            var x = Expression.Parameter(typeof(object), "x");
             var v = Expression.Parameter(typeof(object), "v");
 
             var left = Expression.PropertyOrField(
@@ -79,7 +79,7 @@ namespace Codeplex.Data.Internal
                 name);
             var right = Expression.Convert(v, left.Type);
 
-            var action = Expression.Lambda<ActionRef<object, object>>(
+            var action = Expression.Lambda<Action<object, object>>(
                 Expression.Assign(left, right),
                 x, v);
 

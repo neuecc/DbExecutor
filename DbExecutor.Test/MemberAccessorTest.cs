@@ -102,16 +102,16 @@ namespace DbExecutorTest
             accessors.Take(8).All(a => a.IsWritable);
             accessors.Select(a => a.Name).Is("Field1", "Field2", "Property1", "Property2", "Property3", "Property4", "Property5", "Property6", "PropertyReadOnly", "PropertySetOnly");
 
-            object target = new TestMockClass();
-            accessors[0].SetValue(ref target, "a");
-            accessors[2].SetValue(ref target, "b");
-            accessors[4].SetValue(ref target, "c");
-            accessors[6].SetValue(ref target, "d");
-            accessors[1].SetValue(ref target, 1);
-            accessors[3].SetValue(ref target, 2);
-            accessors[5].SetValue(ref target, 3);
-            accessors[7].SetValue(ref target, 4);
-            accessors.Where(a => a.IsReadable).Select(a => a.GetValue(ref target)).Is("a", 1, "b", 2, "c", 3, "d", 4, null);
+            var target = new TestMockClass();
+            accessors[0].SetValue(target, "a");
+            accessors[2].SetValue(target, "b");
+            accessors[4].SetValue(target, "c");
+            accessors[6].SetValue(target, "d");
+            accessors[1].SetValue(target, 1);
+            accessors[3].SetValue(target, 2);
+            accessors[5].SetValue(target, 3);
+            accessors[7].SetValue(target, 4);
+            accessors.Where(a => a.IsReadable).Select(a => a.GetValue(target)).Is("a", 1, "b", 2, "c", 3, "d", 4, null);
             Enumerable.Repeat((target as TestMockClass), 1)
                 .SelectMany(m => new object[] { m.Field1, m.Field2, m.Property1, m.Property2, m.Property5, m.Property6 })
                 .Is("a", 1, "b", 2, "d", 4);
@@ -123,7 +123,7 @@ namespace DbExecutorTest
             var write = accessors[9];
             write.IsReadable.Is(false);
             write.IsWritable.Is(true);
-            write.SetValue(ref target, "test");
+            write.SetValue(target, "test");
             Assert.AreEqual("test", (target as TestMockClass).AsDynamic().hiddenField);
         }
 
@@ -143,15 +143,15 @@ namespace DbExecutorTest
             accessors.Select(a => a.Name).Is("Field1", "Field2", "Property1", "Property2", "Property3", "Property4", "Property5", "Property6", "PropertyReadOnly", "PropertySetOnly");
 
             object target = new TestMockStruct();
-            accessors[0].SetValue(ref target, "a");
-            accessors[2].SetValue(ref target, "b");
-            accessors[4].SetValue(ref target, "c");
-            accessors[6].SetValue(ref target, "d");
-            accessors[1].SetValue(ref target, 1);
-            accessors[3].SetValue(ref target, 2);
-            accessors[5].SetValue(ref target, 3);
-            accessors[7].SetValue(ref target, 4);
-            accessors.Where(a => a.IsReadable).Select(a => a.GetValue(ref target)).Is("a", 1, "b", 2, "c", 3, "d", 4, null);
+            accessors[0].SetValue(target, "a");
+            accessors[2].SetValue(target, "b");
+            accessors[4].SetValue(target, "c");
+            accessors[6].SetValue(target, "d");
+            accessors[1].SetValue(target, 1);
+            accessors[3].SetValue(target, 2);
+            accessors[5].SetValue(target, 3);
+            accessors[7].SetValue(target, 4);
+            accessors.Where(a => a.IsReadable).Select(a => a.GetValue(target)).Is("a", 1, "b", 2, "c", 3, "d", 4, null);
             Enumerable.Repeat((TestMockStruct)target, 1)
                 .SelectMany(m => new object[] { m.Field1, m.Field2, m.Property1, m.Property2, m.Property5, m.Property6 })
                 .Is("a", 1, "b", 2, "d", 4);
@@ -163,7 +163,7 @@ namespace DbExecutorTest
             var write = accessors[9];
             write.IsReadable.Is(false);
             write.IsWritable.Is(true);
-            write.SetValue(ref target, "test");
+            write.SetValue(target, "test");
             Assert.AreEqual("test", ((TestMockStruct)target).AsDynamic().hiddenField);
         }
 
@@ -179,8 +179,8 @@ namespace DbExecutorTest
             xs.All(a => !a.IsWritable);
 
             object an = anon;
-            xs[0].GetValue(ref an).Is("HOGE");
-            xs[1].GetValue(ref an).Is(1000);
+            xs[0].GetValue(an).Is("HOGE");
+            xs[1].GetValue(an).Is(1000);
         }
     }
 }
