@@ -66,7 +66,7 @@ namespace Codeplex.Data
                     Contract.Assume(parameter != null);
                     var param = command.CreateParameter();
                     param.ParameterName = p.Name;
-                    param.Value = p.GetValue(parameter);
+                    param.Value = p.GetValueDirect(parameter);
                     command.Parameters.Add(param);
                 }
             }
@@ -177,7 +177,7 @@ namespace Codeplex.Data
                         if (dr.IsDBNull(i)) continue;
 
                         var accessor = accessors[dr.GetName(i)];
-                        if (accessor != null && accessor.IsWritable) accessor.SetValue(result, dr[i]);
+                        if (accessor != null && accessor.IsWritable) accessor.SetValueDirect(result, dr[i]);
                     }
                     return (T)result;
                 });
@@ -214,7 +214,7 @@ namespace Codeplex.Data
                 .Select(p => p.Name + " = " + "@" + p.Name));
 
             var where = string.Join(" and ", AccessorCache.Lookup(whereCondition.GetType())
-                .Select(p => p.Name + " = " + p.GetValue(whereCondition)));
+                .Select(p => p.Name + " = " + p.GetValueDirect(whereCondition)));
 
             var query = string.Format("update {0} set {1} where {2}", tableName, update, where);
 
@@ -231,7 +231,7 @@ namespace Codeplex.Data
             Contract.Requires<ArgumentNullException>(whereCondition != null);
 
             var where = string.Join(" and ", AccessorCache.Lookup(whereCondition.GetType())
-                .Select(p => p.Name + " = " + p.GetValue(whereCondition)));
+                .Select(p => p.Name + " = " + p.GetValueDirect(whereCondition)));
 
             var query = string.Format("delete from {0} where {1}", tableName, where);
 

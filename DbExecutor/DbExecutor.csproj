@@ -109,11 +109,12 @@
     <Compile Include="DbExecutor.cs" />
     <Compile Include="Internal\IMemberAccessor.cs" />
     <Compile Include="Internal\ReflectionAccessor.cs" />
+    <Compile Include="Internal\IKeyIndexable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DbExecutor.Static.cs" />
     <Compile Include="Internal\ExpressionAccessor.cs" />
     <Compile Include="Internal\AccessorCache.cs" />
-    <Compile Include="Internal\MemberAccessorCollection.cs" />
+    <Compile Include="Internal\KeyIndexable.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0">
