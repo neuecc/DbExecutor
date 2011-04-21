@@ -10,7 +10,7 @@ namespace Codeplex.Data.Internal
 
         public static MemberAccessorCollection Lookup(Type targetType)
         {
-            Contract.Requires(targetType != null);
+            Contract.Requires<ArgumentNullException>(targetType != null);
             Contract.Ensures(Contract.Result<MemberAccessorCollection>() != null);
 
             lock (cache)

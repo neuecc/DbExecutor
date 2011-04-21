@@ -18,22 +18,22 @@ namespace Codeplex.Data.Internal
 
         public ExpressionAccessor(PropertyInfo info)
         {
-            Contract.Requires(info != null);
+            Contract.Requires<ArgumentNullException>(info != null);
 
             this.Name = info.Name;
             this.DelaringType = info.DeclaringType;
-            this.getValue = info.CanRead ? CreateGetValue(DelaringType, Name) : null;
-            this.setValue = info.CanWrite ? CreateSetValue(DelaringType, Name) : null;
+            this.getValue = (info.GetGetMethod(false) != null) ? CreateGetValue(DelaringType, Name) : null;
+            this.setValue = (info.GetSetMethod(false) != null) ? CreateSetValue(DelaringType, Name) : null;
         }
 
         public ExpressionAccessor(FieldInfo info)
         {
-            Contract.Requires(info != null);
+            Contract.Requires<ArgumentNullException>(info != null);
 
             this.Name = info.Name;
             this.DelaringType = info.DeclaringType;
             this.getValue = CreateGetValue(DelaringType, Name);
-            this.setValue = CreateSetValue(DelaringType, Name);
+            this.setValue = (!info.IsInitOnly) ? CreateSetValue(DelaringType, Name) : null;
         }
 
         public object GetValue(ref object target)

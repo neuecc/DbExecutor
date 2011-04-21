@@ -23,8 +23,8 @@ namespace Codeplex.Data
         /// <param name="connection">Database connection.</param>
         public DbExecutor(IDbConnection connection)
         {
-            Contract.Requires(connection != null);
-            
+            Contract.Requires<ArgumentNullException>(connection != null);
+
             this.connection = connection;
             this.isUseTransaction = false;
         }
@@ -34,7 +34,7 @@ namespace Codeplex.Data
         /// <param name="isolationLevel">Transaction IsolationLevel.</param>
         public DbExecutor(IDbConnection connection, IsolationLevel isolationLevel)
         {
-            Contract.Requires(connection != null);
+            Contract.Requires<ArgumentNullException>(connection != null);
 
             this.connection = connection;
             this.isUseTransaction = true;
@@ -44,7 +44,7 @@ namespace Codeplex.Data
         /// <summary>If connection is not open then open and create command.</summary>
         private IDbCommand PrepareExecute(string query, CommandType commandType, params object[] parameters)
         {
-            Contract.Requires(!String.IsNullOrEmpty(query));
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IDbCommand>() != null);
 
             if (connection.State != ConnectionState.Open) connection.Open();
@@ -77,7 +77,7 @@ namespace Codeplex.Data
 
         public IEnumerable<IDataRecord> ExecuteReader(string query, object parameter = null)
         {
-            Contract.Requires(!String.IsNullOrEmpty(query));
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<IDataRecord>>() != null);
 
             return ExecuteReader(query, CommandType.Text, parameter);
@@ -90,7 +90,7 @@ namespace Codeplex.Data
         /// <returns>Query results. This is lazy evaluation.</returns>
         public IEnumerable<IDataRecord> ExecuteReader(string query, CommandType commandType, object parameter = null)
         {
-            Contract.Requires(!String.IsNullOrEmpty(query));
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<IDataRecord>>() != null);
 
             using (var command = PrepareExecute(query, commandType, parameter))
@@ -104,7 +104,7 @@ namespace Codeplex.Data
         /// <summary>Executes and returns the number of rows affected."</summary>
         public int ExecuteNonQuery(string query, object parameter = null)
         {
-            Contract.Requires(!String.IsNullOrEmpty(query));
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
 
             return ExecuteNonQuery(query, CommandType.Text, parameter);
         }
@@ -126,7 +126,7 @@ namespace Codeplex.Data
         /// <returns>Query results.</returns>
         public T ExecuteScalar<T>(string query, object parameter = null)
         {
-            Contract.Requires(!String.IsNullOrEmpty(query));
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<T>() != null);
 
             return ExecuteScalar<T>(query, CommandType.Text, parameter);
@@ -135,7 +135,7 @@ namespace Codeplex.Data
         /// <summary>Executes and returns the first column.</summary>
         public T ExecuteScalar<T>(string query, CommandType commandType, object parameter = null)
         {
-            Contract.Requires(!String.IsNullOrEmpty(query));
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<T>() != null);
 
             using (var command = PrepareExecute(query, commandType, parameter))
@@ -154,7 +154,7 @@ namespace Codeplex.Data
         /// <returns>Query results. This is lazy evaluation.</returns>
         public IEnumerable<T> Select<T>(string query, object parameter = null) where T : new()
         {
-            Contract.Requires(!String.IsNullOrEmpty(query));
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
 
             return Select<T>(query, CommandType.Text, parameter);
@@ -162,7 +162,7 @@ namespace Codeplex.Data
 
         public IEnumerable<T> Select<T>(string query, CommandType commandType, object parameter = null) where T : new()
         {
-            Contract.Requires(!String.IsNullOrEmpty(query));
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
 
             var accessors = AccessorCache.Lookup(typeof(T));
@@ -186,7 +186,7 @@ namespace Codeplex.Data
         /// <param name="insertItem">Table's column name extracted from PropertyName.</param>
         public int Insert(string tableName, object insertItem)
         {
-            Contract.Requires(!String.IsNullOrEmpty(tableName));
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(tableName));
             Contract.Requires(insertItem != null);
 
             var propNames = AccessorCache.Lookup(insertItem.GetType())
@@ -203,9 +203,9 @@ namespace Codeplex.Data
 
         public int Update(string tableName, object whereCondition, object updateParameter)
         {
-            Contract.Requires(!String.IsNullOrEmpty(tableName));
-            Contract.Requires(whereCondition != null);
-            Contract.Requires(updateParameter != null);
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(tableName));
+            Contract.Requires<ArgumentNullException>(whereCondition != null);
+            Contract.Requires<ArgumentNullException>(updateParameter != null);
 
             var update = string.Join(", ", AccessorCache.Lookup(updateParameter.GetType())
                 .Where(p => p.IsReadable)
@@ -225,8 +225,8 @@ namespace Codeplex.Data
 
         public int Delete(string tableName, object whereCondition)
         {
-            Contract.Requires(!String.IsNullOrEmpty(tableName));
-            Contract.Requires(whereCondition != null);
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(tableName));
+            Contract.Requires<ArgumentNullException>(whereCondition != null);
 
             var where = string.Join(" and ", AccessorCache.Lookup(whereCondition.GetType())
                 .Select(p => p.Name + " = " + p.GetValue(ref whereCondition)));

@@ -52,13 +52,13 @@ namespace Codeplex.Data.Internal
 
         public object GetValue(ref object target)
         {
-            Contract.Requires(target != null);
+            Contract.Requires<ArgumentNullException>(target != null);
             throw new NotImplementedException();
         }
 
         public void SetValue(ref object target, object value)
         {
-            Contract.Requires(target != null);
+            Contract.Requires<ArgumentNullException>(target != null);
             throw new NotImplementedException();
         }
     }

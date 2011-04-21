@@ -13,7 +13,7 @@ namespace Codeplex.Data.Internal
 
         public MemberAccessorCollection(Type type)
         {
-            Contract.Requires(type != null);
+            Contract.Requires<ArgumentNullException>(type != null);
 
             var props = type.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.SetProperty)
                 .Select(pi => new ExpressionAccessor(pi));
@@ -28,7 +28,7 @@ namespace Codeplex.Data.Internal
         {
             get
             {
-                Contract.Requires(name != null);
+                Contract.Requires<ArgumentNullException>(name != null);
 
                 IMemberAccessor accessor;
                 return accessors.TryGetValue(name, out accessor)
