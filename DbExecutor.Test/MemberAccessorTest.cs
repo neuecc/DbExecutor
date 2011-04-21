@@ -97,7 +97,7 @@ namespace DbExecutorTest
                 .ToArray();
 
             accessors.Length.Is(10);
-            accessors.All(a => a.DelaringType == typeof(TestMockClass));
+            accessors.All(a => a.DeclaringType == typeof(TestMockClass));
             accessors.Take(8).All(a => a.IsReadable);
             accessors.Take(8).All(a => a.IsWritable);
             accessors.Select(a => a.Name).Is("Field1", "Field2", "Property1", "Property2", "Property3", "Property4", "Property5", "Property6", "PropertyReadOnly", "PropertySetOnly");
@@ -137,7 +137,7 @@ namespace DbExecutorTest
                 .ToArray();
 
             accessors.Length.Is(10);
-            accessors.All(a => a.DelaringType == typeof(TestMockStruct));
+            accessors.All(a => a.DeclaringType == typeof(TestMockStruct));
             accessors.Take(8).All(a => a.IsReadable);
             accessors.Take(8).All(a => a.IsWritable);
             accessors.Select(a => a.Name).Is("Field1", "Field2", "Property1", "Property2", "Property3", "Property4", "Property5", "Property6", "PropertyReadOnly", "PropertySetOnly");
@@ -174,7 +174,7 @@ namespace DbExecutorTest
             var xs = anon.GetType().GetProperties().Select(p => new ExpressionAccessor(p)).OrderBy(x => x.Name).ToArray();
 
             xs.Length.Is(2);
-            xs.Select(a => a.DelaringType).All(t => t == anon.GetType());
+            xs.Select(a => a.DeclaringType).All(t => t == anon.GetType());
             xs.All(a => a.IsReadable);
             xs.All(a => !a.IsWritable);
 

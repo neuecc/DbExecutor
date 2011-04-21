@@ -11,7 +11,7 @@ namespace Codeplex.Data.Internal
         readonly IMemberAccessor accessor;
 
         public string Name { get { return accessor.Name; } }
-        public Type DelaringType { get { return accessor.DelaringType; } }
+        public Type DeclaringType { get { return accessor.DeclaringType; } }
         public bool IsReadable { get { return accessor.IsReadable; } }
         public bool IsWritable { get { return accessor.IsWritable; } }
 
@@ -46,7 +46,7 @@ namespace Codeplex.Data.Internal
         class PropertyAccessor : IMemberAccessor
         {
             public string Name { get; private set; }
-            public Type DelaringType { get; private set; }
+            public Type DeclaringType { get; private set; }
             public bool IsReadable { get; private set; }
             public bool IsWritable { get; private set; }
 
@@ -56,7 +56,7 @@ namespace Codeplex.Data.Internal
             {
                 this.info = info;
                 this.Name = info.Name;
-                this.DelaringType = info.DeclaringType;
+                this.DeclaringType = info.DeclaringType;
                 this.IsReadable = (info.GetGetMethod(false) != null);
                 this.IsWritable = (info.GetSetMethod(false) != null);
             }
@@ -75,7 +75,7 @@ namespace Codeplex.Data.Internal
         class FieldAccessor : IMemberAccessor
         {
             public string Name { get; private set; }
-            public Type DelaringType { get; private set; }
+            public Type DeclaringType { get; private set; }
             public bool IsReadable { get; private set; }
             public bool IsWritable { get; private set; }
 
@@ -85,7 +85,7 @@ namespace Codeplex.Data.Internal
             {
                 this.info = info;
                 this.Name = info.Name;
-                this.DelaringType = info.DeclaringType;
+                this.DeclaringType = info.DeclaringType;
                 this.IsReadable = true;
                 this.IsWritable = !info.IsInitOnly;
             }

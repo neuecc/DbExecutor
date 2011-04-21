@@ -8,22 +8,23 @@ namespace Codeplex.Data.Internal
     /// <summary>Delegate accessor created from expression tree.</summary>
     internal class ExpressionAccessor : IMemberAccessor
     {
-        public Type DelaringType { get; private set; }
+        public Type DeclaringType { get; private set; }
         public string Name { get; private set; }
-        public bool IsReadable { get { return getValue != null; } }
-        public bool IsWritable { get { return setValue != null; } }
+        public bool IsReadable { get { return GetValueDirect != null; } }
+        public bool IsWritable { get { return SetValueDirect != null; } }
 
-        readonly Func<object, object> getValue;
-        readonly Action<object, object> setValue;
+        // for performance optimization
+        public readonly Func<object, object> GetValueDirect;
+        public readonly Action<object, object> SetValueDirect;
 
         public ExpressionAccessor(PropertyInfo info)
         {
             Contract.Requires<ArgumentNullException>(info != null);
 
             this.Name = info.Name;
-            this.DelaringType = info.DeclaringType;
-            this.getValue = (info.GetGetMethod(false) != null) ? CreateGetValue(DelaringType, Name) : null;
-            this.setValue = (info.GetSetMethod(false) != null) ? CreateSetValue(DelaringType, Name) : null;
+            this.DeclaringType = info.DeclaringType;
+            this.GetValueDirect = (info.GetGetMethod(false) != null) ? CreateGetValue(DeclaringType, Name) : null;
+            this.SetValueDirect = (info.GetSetMethod(false) != null) ? CreateSetValue(DeclaringType, Name) : null;
         }
 
         public ExpressionAccessor(FieldInfo info)
@@ -31,23 +32,23 @@ namespace Codeplex.Data.Internal
             Contract.Requires<ArgumentNullException>(info != null);
 
             this.Name = info.Name;
-            this.DelaringType = info.DeclaringType;
-            this.getValue = CreateGetValue(DelaringType, Name);
-            this.setValue = (!info.IsInitOnly) ? CreateSetValue(DelaringType, Name) : null;
+            this.DeclaringType = info.DeclaringType;
+            this.GetValueDirect = CreateGetValue(DeclaringType, Name);
+            this.SetValueDirect = (!info.IsInitOnly) ? CreateSetValue(DeclaringType, Name) : null;
         }
 
         public object GetValue(object target)
         {
             if (!IsReadable) throw new InvalidOperationException("is not readable member");
 
-            return getValue(target);
+            return GetValueDirect(target);
         }
 
         public void SetValue(object target, object value)
         {
             if (!IsWritable) throw new InvalidOperationException("is not writable member");
 
-            setValue(target, value);
+            SetValueDirect(target, value);
         }
 
         // (object x) => (object)((T)x).name

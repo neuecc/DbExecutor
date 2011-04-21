@@ -7,7 +7,7 @@ namespace Codeplex.Data.Internal
     internal partial interface IMemberAccessor
     {
         string Name { get; }
-        Type DelaringType { get; }
+        Type DeclaringType { get; }
         bool IsReadable { get; }
         bool IsWritable { get; }
 
@@ -27,7 +27,7 @@ namespace Codeplex.Data.Internal
             }
         }
 
-        public Type DelaringType
+        public Type DeclaringType
         {
             get
             {
