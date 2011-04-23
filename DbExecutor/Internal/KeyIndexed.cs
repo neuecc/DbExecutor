@@ -5,23 +5,23 @@ using System.Linq;
 
 namespace Codeplex.Data.Internal
 {
-    internal static class KeyIndexable
+    internal static class KeyIndexed
     {
-        public static IKeyIndexable<TKey, TElement> Create<TSource, TKey, TElement>(
+        public static IKeyIndexed<TKey, TElement> Create<TSource, TKey, TElement>(
             IEnumerable<TSource> source, Func<TSource, TKey> keySelector, Func<TSource, TElement> elementSelector)
         {
             Contract.Requires<ArgumentNullException>(source != null);
             Contract.Requires<ArgumentNullException>(keySelector != null);
             Contract.Requires<ArgumentNullException>(elementSelector != null);
 
-            return new ReadOnlyKeyIndexableCollection<TKey, TElement>(source.ToDictionary(x => keySelector(x), x => elementSelector(x)));
+            return new ReadOnlyKeyIndexedCollection<TKey, TElement>(source.ToDictionary(x => keySelector(x), x => elementSelector(x)));
         }
 
-        class ReadOnlyKeyIndexableCollection<TKey, TElement> : IKeyIndexable<TKey, TElement>
+        class ReadOnlyKeyIndexedCollection<TKey, TElement> : IKeyIndexed<TKey, TElement>
         {
             readonly Dictionary<TKey, TElement> source;
 
-            public ReadOnlyKeyIndexableCollection(Dictionary<TKey, TElement> source)
+            public ReadOnlyKeyIndexedCollection(Dictionary<TKey, TElement> source)
             {
                 this.source = source;
             }

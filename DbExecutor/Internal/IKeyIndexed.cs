@@ -5,14 +5,14 @@ using System.Linq;
 
 namespace Codeplex.Data.Internal
 {
-    [ContractClass(typeof(IKeyIndexableContract<,>))]
-    internal partial interface IKeyIndexable<in TKey, out TValue> : IEnumerable<TValue>
+    [ContractClass(typeof(IKeyIndexedContract<,>))]
+    internal partial interface IKeyIndexed<in TKey, out TValue> : IEnumerable<TValue>
     {
         TValue this[TKey key] { get; }
     }
 
-    [ContractClassFor(typeof(IKeyIndexable<,>))]
-    abstract class IKeyIndexableContract<TKey, TValue> : IKeyIndexable<TKey, TValue>
+    [ContractClassFor(typeof(IKeyIndexed<,>))]
+    abstract class IKeyIndexedContract<TKey, TValue> : IKeyIndexed<TKey, TValue>
     {
         public TValue this[TKey key]
         {

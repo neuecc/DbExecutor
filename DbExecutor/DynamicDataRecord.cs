@@ -6,6 +6,7 @@ using System.Dynamic;
 
 namespace Codeplex.Data
 {
+    /// <summary>Dynamic IDataRecord Accessor.</summary>
     public class DynamicDataRecord : DynamicObject
     {
         IDataRecord record;
@@ -42,5 +43,5 @@ namespace Codeplex.Data
                 yield return record.GetName(i);
             }
         }
-    }  
+    }
 }
