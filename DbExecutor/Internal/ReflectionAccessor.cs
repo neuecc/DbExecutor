@@ -31,14 +31,14 @@ namespace Codeplex.Data.Internal
 
         public object GetValue(object target)
         {
-            if (!IsReadable) throw new InvalidOperationException("is not readable member");
+            if (!accessor.IsReadable) throw new InvalidOperationException("is not writable member");
 
             return accessor.GetValue(target);
         }
 
         public void SetValue(object target, object value)
         {
-            if (!IsWritable) throw new InvalidOperationException("is not writable member");
+            if (!accessor.IsWritable) throw new InvalidOperationException("is not writable member");
 
             accessor.SetValue(target, value);
         }

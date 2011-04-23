@@ -19,18 +19,18 @@ namespace Codeplex.Data.Internal
             get
             {
                 Contract.Requires<ArgumentNullException>(key != null);
-                throw new NotImplementedException();
+                return default(TValue);
             }
         }
 
         public IEnumerator<TValue> GetEnumerator()
         {
-            throw new NotImplementedException();
+            return null;
         }
 
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator()
         {
-            throw new NotImplementedException();
+            return null;
         }
     }
 }

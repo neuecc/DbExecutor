@@ -39,15 +39,11 @@ namespace Codeplex.Data.Internal
 
         public object GetValue(object target)
         {
-            if (!IsReadable) throw new InvalidOperationException("is not readable member");
-
             return GetValueDirect(target);
         }
 
         public void SetValue(object target, object value)
         {
-            if (!IsWritable) throw new InvalidOperationException("is not writable member");
-
             SetValueDirect(target, value);
         }
 

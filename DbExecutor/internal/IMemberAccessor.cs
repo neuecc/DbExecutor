@@ -23,7 +23,7 @@ namespace Codeplex.Data.Internal
             get
             {
                 Contract.Ensures(!String.IsNullOrEmpty(Contract.Result<string>()));
-                throw new NotImplementedException();
+                return default(string);
             }
         }
 
@@ -32,30 +32,31 @@ namespace Codeplex.Data.Internal
             get
             {
                 Contract.Ensures(Contract.Result<Type>() != null);
-                throw new NotImplementedException();
+                return default(Type);
             }
         }
 
         public bool IsReadable
         {
-            get { throw new NotImplementedException(); }
+            get { return default(bool); }
         }
 
         public bool IsWritable
         {
-            get { throw new NotImplementedException(); }
+            get { return default(bool); }
         }
 
         public object GetValue(object target)
         {
             Contract.Requires<ArgumentNullException>(target != null);
-            throw new NotImplementedException();
+            Contract.Requires<InvalidOperationException>(IsReadable, "is not readable member");
+            return default(object);
         }
 
         public void SetValue(object target, object value)
         {
             Contract.Requires<ArgumentNullException>(target != null);
-            throw new NotImplementedException();
+            Contract.Requires<InvalidOperationException>(IsWritable, "is not writable member");
         }
     }
 }

@@ -101,6 +101,18 @@ namespace Codeplex.Data
 
         }
 
+        public IEnumerable<dynamic> ExecuteReaderDynamic(string query, object parameter = null)
+        {
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
+
+            using (var command = PrepareExecute(query, CommandType.Text, parameter))
+            using (var reader = command.ExecuteReader())
+            {
+                var record = new DynamicDataRecord(reader); // reference same reader
+                while (reader.Read()) yield return record;
+            }
+        }
+
         /// <summary>Executes and returns the number of rows affected."</summary>
         public int ExecuteNonQuery(string query, object parameter = null)
         {
