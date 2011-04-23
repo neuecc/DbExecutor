@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Diagnostics.Contracts;
 using Codeplex.Data.Internal;
+using System.Dynamic;
 
 namespace Codeplex.Data
 {
@@ -75,38 +76,30 @@ namespace Codeplex.Data
             return command;
         }
 
-        public IEnumerable<IDataRecord> ExecuteReader(string query, object parameter = null)
-        {
-            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
-            Contract.Ensures(Contract.Result<IEnumerable<IDataRecord>>() != null);
-
-            return ExecuteReader(query, CommandType.Text, parameter);
-        }
-
         /// <summary>Executes and returns the data records."</summary>
         /// <param name="query">SQL code.</param>
-        /// <param name="commandType">Command type.</param>
         /// <param name="parameter">PropertyName parameterized to @PropertyName. if null then no use parameter.</param>
-        /// <returns>Query results. This is lazy evaluation.</returns>
-        public IEnumerable<IDataRecord> ExecuteReader(string query, CommandType commandType, object parameter = null)
+        /// <param name="commandType">Command Type.</param>
+        /// <param name="commandBehavior">Command Behavior.</param>
+        /// <returns>Query results. Result is lazy evaluation.</returns>
+        public IEnumerable<IDataRecord> ExecuteReader(string query, object parameter = null, CommandType commandType = CommandType.Text, CommandBehavior commandBehavior = CommandBehavior.Default)
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<IDataRecord>>() != null);
 
             using (var command = PrepareExecute(query, commandType, parameter))
-            using (var reader = command.ExecuteReader())
+            using (var reader = command.ExecuteReader(commandBehavior))
             {
                 while (reader.Read()) yield return reader;
             }
-
         }
 
-        public IEnumerable<dynamic> ExecuteReaderDynamic(string query, object parameter = null)
+        public IEnumerable<dynamic> ExecuteReaderDynamic(string query, object parameter = null, CommandType commandType = CommandType.Text, CommandBehavior commandBehavior = CommandBehavior.Default)
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
 
-            using (var command = PrepareExecute(query, CommandType.Text, parameter))
-            using (var reader = command.ExecuteReader())
+            using (var command = PrepareExecute(query, commandType, parameter))
+            using (var reader = command.ExecuteReader(commandBehavior))
             {
                 var record = new DynamicDataRecord(reader); // reference same reader
                 while (reader.Read()) yield return record;
@@ -114,16 +107,9 @@ namespace Codeplex.Data
         }
 
         /// <summary>Executes and returns the number of rows affected."</summary>
-        public int ExecuteNonQuery(string query, object parameter = null)
+        public int ExecuteNonQuery(string query, object parameter = null, CommandType commandType = CommandType.Text)
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
-
-            return ExecuteNonQuery(query, CommandType.Text, parameter);
-        }
-
-        public int ExecuteNonQuery(string query, CommandType commandType, object parameter = null)
-        {
-            Contract.Requires(!String.IsNullOrEmpty(query));
 
             using (var command = PrepareExecute(query, commandType, parameter))
             {
@@ -135,17 +121,9 @@ namespace Codeplex.Data
         /// <typeparam name="T">Result type.</typeparam>
         /// <param name="query">SQL code.</param>
         /// <param name="parameter">PropertyName parameterized to @PropertyName. if null then no use parameter.</param>
+        /// <param name="commandType">Command Type.</param>
         /// <returns>Query results.</returns>
-        public T ExecuteScalar<T>(string query, object parameter = null)
-        {
-            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
-            Contract.Ensures(Contract.Result<T>() != null);
-
-            return ExecuteScalar<T>(query, CommandType.Text, parameter);
-        }
-
-        /// <summary>Executes and returns the first column.</summary>
-        public T ExecuteScalar<T>(string query, CommandType commandType, object parameter = null)
+        public T ExecuteScalar<T>(string query, object parameter = null, CommandType commandType = CommandType.Text)
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<T>() != null);
@@ -163,22 +141,15 @@ namespace Codeplex.Data
         /// <typeparam name="T">Mapping target Class.</typeparam>
         /// <param name="query">SQL code.</param>
         /// <param name="parameter">PropertyName parameterized to @PropertyName. if null then no use parameter.</param>
+        /// <param name="commandType">Command Type.</param>
         /// <returns>Query results. This is lazy evaluation.</returns>
-        public IEnumerable<T> Select<T>(string query, object parameter = null) where T : new()
-        {
-            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
-            Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
-
-            return Select<T>(query, CommandType.Text, parameter);
-        }
-
-        public IEnumerable<T> Select<T>(string query, CommandType commandType, object parameter = null) where T : new()
+        public IEnumerable<T> Select<T>(string query, object parameter = null, CommandType commandType = CommandType.Text) where T : new()
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
 
             var accessors = AccessorCache.Lookup(typeof(T));
-            return ExecuteReader(query, parameter)
+            return ExecuteReader(query, parameter, commandType, CommandBehavior.SequentialAccess)
                 .Select(dr =>
                 {
                     // if T is ValueType then can't set SetValue
@@ -192,6 +163,29 @@ namespace Codeplex.Data
                         if (accessor != null && accessor.IsWritable) accessor.SetValueDirect(result, dr[i]);
                     }
                     return (T)result;
+                });
+        }
+
+        /// <summary>Executes and mapping objects to ExpandoObject. Object is dynamic accessable by ColumnName."</summary>
+        /// <param name="query">SQL code.</param>
+        /// <param name="parameter">PropertyName parameterized to @PropertyName. if null then no use parameter.</param>
+        /// <param name="commandType">Command Type.</param>
+        /// <returns>Query results(ExpandoObject). This is lazy evaluation.</returns>
+        public IEnumerable<dynamic> SelectDynamic(string query, object parameter = null, CommandType commandType = CommandType.Text)
+        {
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
+            Contract.Ensures(Contract.Result<IEnumerable<dynamic>>() != null);
+
+            return ExecuteReader(query, parameter, commandType, CommandBehavior.SequentialAccess)
+                .Select(dr =>
+                {
+                    IDictionary<string, object> expando = new ExpandoObject();
+                    for (int i = 0; i < dr.FieldCount; i++)
+                    {
+                        var value = dr.IsDBNull(i) ? null : dr.GetValue(i);
+                        expando.Add(dr.GetName(i), value);
+                    }
+                    return expando;
                 });
         }
 

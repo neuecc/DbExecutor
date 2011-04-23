@@ -22,15 +22,6 @@ namespace Codeplex.Data
             }
         }
 
-        public static IEnumerable<IDataRecord> ExecuteReader(IDbConnection connection, string query, CommandType commandType, object parameter = null)
-        {
-            using (var exec = new DbExecutor(connection))
-            {
-                foreach (var item in exec.ExecuteReader(query, commandType, parameter))
-                {
-                    yield return item;
-                }
-            }
-        }
+        
     }
 }
