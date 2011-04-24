@@ -48,6 +48,8 @@ create table TestTable(
     Tako nvarchar(10)
 )");
 
+                
+
                 exec.Insert("TestTable", new
                 {
                     Hoge = "aiueo",

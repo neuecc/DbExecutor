@@ -14,6 +14,7 @@ namespace Codeplex.Data
     public partial class DbExecutor : IDisposable
     {
         readonly IDbConnection connection;
+        readonly char parameterSymbol;
         // Transaction
         readonly bool isUseTransaction;
         readonly IsolationLevel isolationLevel;
@@ -22,18 +23,21 @@ namespace Codeplex.Data
 
         /// <summary>Connect start.</summary>
         /// <param name="connection">Database connection.</param>
-        public DbExecutor(IDbConnection connection)
+        /// <param name="parameterSymbol">Command parameter symbol. SqlServer = @, MySql = ?, Oracle = :</param>
+        public DbExecutor(IDbConnection connection, char parameterSymbol = '@')
         {
             Contract.Requires<ArgumentNullException>(connection != null);
 
             this.connection = connection;
+            this.parameterSymbol = parameterSymbol;
             this.isUseTransaction = false;
         }
 
         /// <summary>Use ransaction.</summary>
         /// <param name="connection">Database connection.</param>
         /// <param name="isolationLevel">Transaction IsolationLevel.</param>
-        public DbExecutor(IDbConnection connection, IsolationLevel isolationLevel)
+        /// <param name="parameterSymbol">Command parameter symbol. SqlServer = '@', MySql = '?', Oracle = ':'</param>
+        public DbExecutor(IDbConnection connection, IsolationLevel isolationLevel, char parameterSymbol = '@')
         {
             Contract.Requires<ArgumentNullException>(connection != null);
 
@@ -201,7 +205,7 @@ namespace Codeplex.Data
                 .Where(p => p.IsReadable)
                 .ToArray();
             var column = string.Join(", ", propNames.Select(p => p.Name));
-            var data = string.Join(", ", propNames.Select(p => "@" + p.Name));
+            var data = string.Join(", ", propNames.Select(p => parameterSymbol + p.Name));
 
             var query = string.Format("insert into {0} ({1}) values ({2})", tableName, column, data);
 
@@ -209,23 +213,24 @@ namespace Codeplex.Data
             return ExecuteNonQuery(query, insertItem);
         }
 
-        public int Update(string tableName, object whereCondition, object updateParameter)
+        public int Update(string tableName, object whereCondition, object updateItem)
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(tableName));
             Contract.Requires<ArgumentNullException>(whereCondition != null);
-            Contract.Requires<ArgumentNullException>(updateParameter != null);
+            Contract.Requires<ArgumentNullException>(updateItem != null);
 
-            var update = string.Join(", ", AccessorCache.Lookup(updateParameter.GetType())
+            var update = string.Join(", ", AccessorCache.Lookup(updateItem.GetType())
                 .Where(p => p.IsReadable)
-                .Select(p => p.Name + " = " + "@" + p.Name));
+                .Select(p => p.Name + " = " + parameterSymbol + p.Name));
 
+            // TODO:ParameterizedQuery???
             var where = string.Join(" and ", AccessorCache.Lookup(whereCondition.GetType())
                 .Select(p => p.Name + " = " + p.GetValueDirect(whereCondition)));
 
             var query = string.Format("update {0} set {1} where {2}", tableName, update, where);
 
             Contract.Assume(query.Length > 0);
-            using (var command = PrepareExecute(query, CommandType.Text, whereCondition, updateParameter))
+            using (var command = PrepareExecute(query, CommandType.Text, whereCondition, updateItem))
             {
                 return command.ExecuteNonQuery();
             }
@@ -236,6 +241,7 @@ namespace Codeplex.Data
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(tableName));
             Contract.Requires<ArgumentNullException>(whereCondition != null);
 
+            // TODO:ParameterizedQuery???
             var where = string.Join(" and ", AccessorCache.Lookup(whereCondition.GetType())
                 .Select(p => p.Name + " = " + p.GetValueDirect(whereCondition)));
 
