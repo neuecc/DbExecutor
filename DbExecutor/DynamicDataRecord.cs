@@ -6,8 +6,8 @@ using System.Dynamic;
 
 namespace Codeplex.Data
 {
-    /// <summary>Dynamic IDataRecord Accessor.</summary>
-    public class DynamicDataRecord : DynamicObject
+    /// <summary>Dynamic IDataRecord Accessor. Can access dot syntax by column name or indexer(No or Name).</summary>
+    public sealed class DynamicDataRecord : DynamicObject
     {
         IDataRecord record;
 
@@ -22,7 +22,7 @@ namespace Codeplex.Data
         {
             var index = indexes[0];
             result =
-                (index is string) ? record[(string)index]
+                  (index is string) ? record[(string)index]
                 : (index is int) ? record[(int)index]
                 : null;
             if (result.Equals(DBNull.Value)) result = null;

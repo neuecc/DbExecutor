@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Data;
-using System.Linq;
-using System.Reflection;
 using System.Diagnostics.Contracts;
-using Codeplex.Data.Internal;
 using System.Dynamic;
+using System.Linq;
+using Codeplex.Data.Internal;
 
 namespace Codeplex.Data
 {
@@ -21,9 +19,9 @@ namespace Codeplex.Data
         IDbTransaction transaction;
         bool isTransactionCompleted = false;
 
-        /// <summary>Connect start.</summary>
+        /// <summary>Create standard executor.</summary>
         /// <param name="connection">Database connection.</param>
-        /// <param name="parameterSymbol">Command parameter symbol. SqlServer = @, MySql = ?, Oracle = :</param>
+        /// <param name="parameterSymbol">Command parameter symbol. SqlServer = '@', MySql = '?', Oracle = ':'</param>
         public DbExecutor(IDbConnection connection, char parameterSymbol = '@')
         {
             Contract.Requires<ArgumentNullException>(connection != null);
@@ -33,7 +31,7 @@ namespace Codeplex.Data
             this.isUseTransaction = false;
         }
 
-        /// <summary>Use ransaction.</summary>
+        /// <summary>Use transaction.</summary>
         /// <param name="connection">Database connection.</param>
         /// <param name="isolationLevel">Transaction IsolationLevel.</param>
         /// <param name="parameterSymbol">Command parameter symbol. SqlServer = '@', MySql = '?', Oracle = ':'</param>
@@ -42,12 +40,18 @@ namespace Codeplex.Data
             Contract.Requires<ArgumentNullException>(connection != null);
 
             this.connection = connection;
+            this.parameterSymbol = parameterSymbol;
             this.isUseTransaction = true;
             this.isolationLevel = isolationLevel;
         }
 
         /// <summary>If connection is not open then open and create command.</summary>
-        private IDbCommand PrepareExecute(string query, CommandType commandType, params object[] parameters)
+        /// <param name="query">SQL code.</param>
+        /// <param name="commandType">Command Type.</param>
+        /// <param name="parameter">PropertyName parameterized to PropertyName. if null then no use parameter.</param>
+        /// <param name="extraParameter">CommandName set to __extra__PropertyName.</param>
+        /// <returns>Setuped IDbCommand.</returns>
+        protected IDbCommand PrepareExecute(string query, CommandType commandType, object parameter, object extraParameter = null)
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IDbCommand>() != null);
@@ -59,11 +63,8 @@ namespace Codeplex.Data
             command.CommandText = query;
             command.CommandType = commandType;
 
-            for (int i = 0; i < parameters.Length; i++)
+            if (parameter != null)
             {
-                var parameter = parameters[i];
-                if (parameter == null) continue;
-
                 foreach (var p in AccessorCache.Lookup(parameter.GetType()))
                 {
                     if (!p.IsReadable) continue;
@@ -75,6 +76,20 @@ namespace Codeplex.Data
                     command.Parameters.Add(param);
                 }
             }
+            if (extraParameter != null)
+            {
+                foreach (var p in AccessorCache.Lookup(extraParameter.GetType()))
+                {
+                    if (!p.IsReadable) continue;
+
+                    Contract.Assume(extraParameter != null);
+                    var param = command.CreateParameter();
+                    param.ParameterName = "__extra__" + p.Name;
+                    param.Value = p.GetValueDirect(extraParameter);
+                    command.Parameters.Add(param);
+                }
+            }
+
             if (transaction != null) command.Transaction = transaction;
 
             return command;
@@ -82,10 +97,10 @@ namespace Codeplex.Data
 
         /// <summary>Executes and returns the data records."</summary>
         /// <param name="query">SQL code.</param>
-        /// <param name="parameter">PropertyName parameterized to @PropertyName. if null then no use parameter.</param>
+        /// <param name="parameter">PropertyName parameterized to PropertyName. if null then no use parameter.</param>
         /// <param name="commandType">Command Type.</param>
         /// <param name="commandBehavior">Command Behavior.</param>
-        /// <returns>Query results. Result is lazy evaluation.</returns>
+        /// <returns>Query results.</returns>
         public IEnumerable<IDataRecord> ExecuteReader(string query, object parameter = null, CommandType commandType = CommandType.Text, CommandBehavior commandBehavior = CommandBehavior.Default)
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
@@ -98,6 +113,12 @@ namespace Codeplex.Data
             }
         }
 
+        /// <summary>Executes and returns the data records enclosing DynamicDataRecord."</summary>
+        /// <param name="query">SQL code.</param>
+        /// <param name="parameter">PropertyName parameterized to PropertyName. if null then no use parameter.</param>
+        /// <param name="commandType">Command Type.</param>
+        /// <param name="commandBehavior">Command Behavior.</param>
+        /// <returns>Query results. Result type is DynamicDataRecord.</returns>
         public IEnumerable<dynamic> ExecuteReaderDynamic(string query, object parameter = null, CommandType commandType = CommandType.Text, CommandBehavior commandBehavior = CommandBehavior.Default)
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
@@ -111,6 +132,10 @@ namespace Codeplex.Data
         }
 
         /// <summary>Executes and returns the number of rows affected."</summary>
+        /// <param name="query">SQL code.</param>
+        /// <param name="parameter">PropertyName parameterized to PropertyName. if null then no use parameter.</param>
+        /// <param name="commandType">Command Type.</param>
+        /// <returns>Rows affected.</returns>
         public int ExecuteNonQuery(string query, object parameter = null, CommandType commandType = CommandType.Text)
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
@@ -121,12 +146,12 @@ namespace Codeplex.Data
             }
         }
 
-        /// <summary>Executes and returns the first column.</summary>
+        /// <summary>Executes and returns the first column, first row.</summary>
         /// <typeparam name="T">Result type.</typeparam>
         /// <param name="query">SQL code.</param>
-        /// <param name="parameter">PropertyName parameterized to @PropertyName. if null then no use parameter.</param>
+        /// <param name="parameter">PropertyName parameterized to PropertyName. if null then no use parameter.</param>
         /// <param name="commandType">Command Type.</param>
-        /// <returns>Query results.</returns>
+        /// <returns>Query results of first column, first row.</returns>
         public T ExecuteScalar<T>(string query, object parameter = null, CommandType commandType = CommandType.Text)
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
@@ -144,9 +169,9 @@ namespace Codeplex.Data
         /// <summary>Executes and mapping objects by ColumnName - PropertyName."</summary>
         /// <typeparam name="T">Mapping target Class.</typeparam>
         /// <param name="query">SQL code.</param>
-        /// <param name="parameter">PropertyName parameterized to @PropertyName. if null then no use parameter.</param>
+        /// <param name="parameter">PropertyName parameterized to PropertyName. if null then no use parameter.</param>
         /// <param name="commandType">Command Type.</param>
-        /// <returns>Query results. This is lazy evaluation.</returns>
+        /// <returns>Mapped instances.</returns>
         public IEnumerable<T> Select<T>(string query, object parameter = null, CommandType commandType = CommandType.Text) where T : new()
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
@@ -172,9 +197,9 @@ namespace Codeplex.Data
 
         /// <summary>Executes and mapping objects to ExpandoObject. Object is dynamic accessable by ColumnName."</summary>
         /// <param name="query">SQL code.</param>
-        /// <param name="parameter">PropertyName parameterized to @PropertyName. if null then no use parameter.</param>
+        /// <param name="parameter">PropertyName parameterized to PropertyName. if null then no use parameter.</param>
         /// <param name="commandType">Command Type.</param>
-        /// <returns>Query results(ExpandoObject). This is lazy evaluation.</returns>
+        /// <returns>Mapped results(dynamic type is ExpandoObject).</returns>
         public IEnumerable<dynamic> SelectDynamic(string query, object parameter = null, CommandType commandType = CommandType.Text)
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
@@ -196,6 +221,7 @@ namespace Codeplex.Data
         /// <summary>Insert by object's PropertyName."</summary>
         /// <param name="tableName">Target database's table.</param>
         /// <param name="insertItem">Table's column name extracted from PropertyName.</param>
+        /// <returns>Rows affected.</returns>
         public int Insert(string tableName, object insertItem)
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(tableName));
@@ -213,7 +239,12 @@ namespace Codeplex.Data
             return ExecuteNonQuery(query, insertItem);
         }
 
-        public int Update(string tableName, object whereCondition, object updateItem)
+        /// <summary>Update by object's PropertyName."</summary>
+        /// <param name="tableName">Target database's table.</param>
+        /// <param name="updateItem">Table's column name extracted from PropertyName.</param>
+        /// <param name="whereCondition">Where condition extracted from PropertyName.</param>
+        /// <returns>Rows affected.</returns>
+        public int Update(string tableName, object updateItem, object whereCondition)
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(tableName));
             Contract.Requires<ArgumentNullException>(whereCondition != null);
@@ -223,27 +254,29 @@ namespace Codeplex.Data
                 .Where(p => p.IsReadable)
                 .Select(p => p.Name + " = " + parameterSymbol + p.Name));
 
-            // TODO:ParameterizedQuery???
             var where = string.Join(" and ", AccessorCache.Lookup(whereCondition.GetType())
-                .Select(p => p.Name + " = " + p.GetValueDirect(whereCondition)));
+                .Select(p => p.Name + " = " + parameterSymbol + "__extra__" + p.Name));
 
             var query = string.Format("update {0} set {1} where {2}", tableName, update, where);
 
             Contract.Assume(query.Length > 0);
-            using (var command = PrepareExecute(query, CommandType.Text, whereCondition, updateItem))
+            using (var command = PrepareExecute(query, CommandType.Text, updateItem, whereCondition))
             {
                 return command.ExecuteNonQuery();
             }
         }
 
+        /// <summary>Delete by object's PropertyName."</summary>
+        /// <param name="tableName">Target database's table.</param>
+        /// <param name="whereCondition">Where condition extracted from PropertyName.</param>
+        /// <returns>Rows affected.</returns>
         public int Delete(string tableName, object whereCondition)
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(tableName));
             Contract.Requires<ArgumentNullException>(whereCondition != null);
 
-            // TODO:ParameterizedQuery???
             var where = string.Join(" and ", AccessorCache.Lookup(whereCondition.GetType())
-                .Select(p => p.Name + " = " + p.GetValueDirect(whereCondition)));
+                .Select(p => p.Name + " = " + parameterSymbol + p.Name));
 
             var query = string.Format("delete from {0} where {1}", tableName, where);
 
@@ -264,11 +297,18 @@ namespace Codeplex.Data
         /// <summary>Dispose inner connection.</summary>
         public void Dispose()
         {
-            if (transaction != null && !isTransactionCompleted)
+            try
             {
-                transaction.Rollback();
+                if (transaction != null && !isTransactionCompleted)
+                {
+                    transaction.Rollback();
+                    isTransactionCompleted = true;
+                }
             }
-            connection.Dispose();
+            finally
+            {
+                connection.Dispose();
+            }
         }
     }
 }

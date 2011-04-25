@@ -90,23 +90,21 @@ namespace DbExecutorTest
         [TestMethod]
         public void ClassTest()
         {
-            var accessors = Enumerable.Concat(
-                    typeof(TestMockClass).GetProperties().Select(pi => new ExpressionAccessor(pi)),
-                    typeof(TestMockClass).GetFields().Select(fi => new ExpressionAccessor(fi)))
+            var accessors = AccessorCache.Lookup(typeof(TestMockClass))
                 .OrderBy(x => x.Name)
                 .ToArray();
 
             accessors.Length.Is(10);
             accessors.All(a => a.DeclaringType == typeof(TestMockClass));
-            accessors.Take(8).All(a => a.IsReadable);
-            accessors.Take(8).All(a => a.IsWritable);
+            accessors.Count(a => a.IsReadable).Is(7);
+            accessors.Count(a => a.IsWritable).Is(7);
             accessors.Select(a => a.Name).Is("Field1", "Field2", "Property1", "Property2", "Property3", "Property4", "Property5", "Property6", "PropertyReadOnly", "PropertySetOnly");
 
             var target = new TestMockClass();
             accessors[0].SetValue(target, "a");
             accessors[2].SetValue(target, "b");
             accessors[4].SetValue(target, "c");
-            accessors[6].SetValue(target, "d");
+            accessors[6].IsWritable.Is(false);
             accessors[1].SetValue(target, 1);
             accessors[3].SetValue(target, 2);
             accessors[5].SetValue(target, 3);
@@ -130,9 +128,7 @@ namespace DbExecutorTest
         [TestMethod]
         public void StructTest()
         {
-            var accessors = Enumerable.Concat(
-                    typeof(TestMockStruct).GetProperties().Select(pi => new ExpressionAccessor(pi)),
-                    typeof(TestMockStruct).GetFields().Select(fi => new ExpressionAccessor(fi)))
+            var accessors = AccessorCache.Lookup(typeof(TestMockStruct))
                 .OrderBy(x => x.Name)
                 .ToArray();
 
