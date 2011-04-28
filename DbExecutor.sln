@@ -5,6 +5,17 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbExecutor", "DbExecutor\Db
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbExecutor.Test", "DbExecutor.Test\DbExecutor.Test.csproj", "{B39F0E4E-E00B-49B2-8829-6D044CAD1A03}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItem", "SolutionItem", "{B73250D1-21EA-4725-A9D8-E8A3C77FA996}"
+	ProjectSection(SolutionItems) = preProject
+		SolutionItem\DbExecutor.nuspec = SolutionItem\DbExecutor.nuspec
+		SolutionItem\Install.ps1 = SolutionItem\Install.ps1
+		SolutionItem\Ionic.Zip.dll = SolutionItem\Ionic.Zip.dll
+		SolutionItem\NuGet.exe = SolutionItem\NuGet.exe
+		SolutionItem\package.bat = SolutionItem\package.bat
+		SolutionItem\ReadMe.txt = SolutionItem\ReadMe.txt
+		SolutionItem\zippack.fsx = SolutionItem\zippack.fsx
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(TestCaseManagementSettings) = postSolution
 		CategoryFile = DbExecutor.vsmdi

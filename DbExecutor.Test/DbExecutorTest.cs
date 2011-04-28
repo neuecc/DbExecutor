@@ -1,241 +1,227 @@
 ﻿using System;
-using System.Text;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.IO;
-using System.Data.SqlServerCe;
-using Codeplex.Data;
 using System.Data;
-using System.Diagnostics.Contracts;
+using System.Data.SqlServerCe;
+using System.Linq;
+using Codeplex.Data;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DbExecutorTest
 {
     [TestClass]
     public class DbExecutorTest
     {
-        public class MyClass : IEquatable<MyClass>
-        {
-            public string Hoge { get; set; }
-            public int Huga { get; set; }
-            public string Tako { get; set; }
-
-            public static string TableName
-            {
-                get { return "MyClass"; }
-            }
-
-            public static string CreateTableString
-            {
-                get
-                {
-                    return string.Format(@"
-create table {0}
-(
-    Hoge nvarchar(10),
-    Huga int,
-    Tako nvarchar(10)
-)
-", TableName);
-                }
-            }
-
-            public bool Equals(MyClass other)
-            {
-                return this.Hoge == other.Hoge
-                    && this.Huga == other.Huga
-                    && this.Tako == other.Tako;
-            }
-
-            public override bool Equals(object obj)
-            {
-                if (obj == null) return false;
-                return (obj is MyClass)
-                    ? Equals((MyClass)obj)
-                    : false;
-            }
-
-            public override int GetHashCode()
-            {
-                return Hoge.GetHashCode() + Huga.GetHashCode() + Tako.GetHashCode();
-            }
-        }
-
-        public static MyClass[] Data = new[]
-        {
-            new MyClass{ Hoge = "hoge", Huga = 100, Tako = "yaki"},
-            new MyClass{ Hoge = "hage", Huga = -100, Tako = "ika"},
-        };
-
-
         public TestContext TestContext { get; set; }
-        private static string connectionString;
-        private static IDbConnection CreateConnection()
-        {
-            return new SqlCeConnection(connectionString);
-        }
-
-        [AssemblyInitialize]
-        public static void AssemblyInitialize(TestContext tc)
-        {
-            Contract.ContractFailed += (sender, e) =>
-            {
-                e.SetUnwind();
-                Assert.Fail(e.FailureKind.ToString() + ":" + e.Message);
-            };
-        }
+        private static Func<IDbConnection> connectionFactory;
 
         [ClassInitialize]
         public static void Setup(TestContext tc)
         {
-            connectionString = new SqlCeConnectionStringBuilder()
-            {
-                DataSource = Path.Combine(tc.TestDir, "testdb.sdf")
-            }.ToString();
-
-            using (var en = new SqlCeEngine(connectionString))
-            {
-                en.CreateDatabase();
-            }
-
-            using (var exec = new DbExecutor(CreateConnection(), IsolationLevel.ReadCommitted))
-            {
-                exec.ExecuteNonQuery(MyClass.CreateTableString);
-                Array.ForEach(Data, mc => exec.Insert(MyClass.TableName, mc));
-
-                exec.TransactionComplete();
-            }
+            var connStr = new CSharpStructure().Database.Connection.ConnectionString;
+            connectionFactory = () => new SqlCeConnection(connStr);
         }
 
         [TestMethod]
         public void ExecuteReader()
         {
-            using (var exec = new DbExecutor(CreateConnection()))
+            var rs = DbExecutor.ExecuteReader(connectionFactory(),
+                    "select * from Methods where TypeId = @TypeId", new { TypeId = 2 })
+                .Select(dr => new Method
+                {
+                    Name = (string)dr["Name"],
+                    MethodId = (int)dr["MethodId"],
+                })
+                .ToArray();
+            rs.Length.Is(3);
+            rs.Select(x => x.Name).Is("StartsWith", "EndsWith", "Contains");
+
+            using (var exec = new DbExecutor(connectionFactory()))
             {
-                var r = exec.ExecuteReader("select * from MyClass where Huga = @Huga", new { Huga = 100 })
-                    .Select(dr => new MyClass
+                var ri = exec.ExecuteReader("select * from Methods where TypeId = @TypeId", new { TypeId = 2 })
+                    .Select(dr => new Method
                     {
-                        Hoge = (string)dr["Hoge"],
-                        Huga = (int)dr["Huga"],
-                        Tako = (string)dr["Tako"]
+                        Name = (string)dr["Name"],
+                        MethodId = (int)dr["MethodId"],
                     })
                     .ToArray();
-                r.Length.Is(1);
-                r[0].Is(Data[0]);
+                ri.Length.Is(3);
+                ri.Select(x => x.Name).Is("StartsWith", "EndsWith", "Contains");
             }
-
-            DbExecutor.ExecuteReader(CreateConnection(), "select * from MyClass")
-                .Select(dr => new MyClass
-                {
-                    Hoge = (string)dr["Hoge"],
-                    Huga = (int)dr["Huga"],
-                    Tako = (string)dr["Tako"]
-                })
-                .Is(Data);
         }
 
         [TestMethod]
         public void ExecuteReaderDynamic()
         {
-            using (var exec = new DbExecutor(CreateConnection()))
+            var rs = DbExecutor.ExecuteReaderDynamic(connectionFactory(),
+                    "select * from Methods where TypeId = @TypeId", new { TypeId = 2 })
+                .Select(d => new Method
+                {
+                    Name = d.Name,
+                    MethodId = d.MethodId,
+                })
+                .ToArray();
+            rs.Length.Is(3);
+            rs.Select(x => x.Name).Is("StartsWith", "EndsWith", "Contains");
+
+            using (var exec = new DbExecutor(connectionFactory()))
             {
-                var r = exec.ExecuteReaderDynamic("select * from MyClass where Huga = @Huga", new { Huga = 100 })
-                    .Select(d => new MyClass
+                var ri = exec.ExecuteReaderDynamic("select * from Methods where TypeId = @TypeId", new { TypeId = 2 })
+                    .Select(d => new Method
                     {
-                        Hoge = d.Hoge,
-                        Huga = d.Huga,
-                        Tako = d.Tako
+                        Name = d.Name,
+                        MethodId = d.MethodId,
                     })
                     .ToArray();
-                r.Length.Is(1);
-                r[0].Is(Data[0]);
+                ri.Length.Is(3);
+                ri.Select(x => x.Name).Is("StartsWith", "EndsWith", "Contains");
             }
-
-            DbExecutor.ExecuteReaderDynamic(CreateConnection(), "select * from MyClass")
-                .Select(d => new MyClass
-                {
-                    Hoge = d.Hoge,
-                    Huga = d.Huga,
-                    Tako = d.Tako
-                })
-                .Is(Data);
         }
 
         [TestMethod]
         public void ExecuteNonQuery()
         {
-            using (var exec = new DbExecutor(CreateConnection(), IsolationLevel.ReadCommitted))
+            using (var exec = new DbExecutor(connectionFactory(), IsolationLevel.ReadCommitted))
             {
-                var affected = exec.ExecuteNonQuery("insert into MyClass values(@Hoge, @Huga, @Tako)",
-                    new MyClass
-                    {
-                        Hoge = "buhi",
-                        Huga = -9999,
-                        Tako = "osaka"
-                    });
+                var affected = exec.ExecuteNonQuery(
+                    "insert into Types(Name) values(@Name)",
+                    new { Name = "NewTypeEXECUTE" });
                 affected.Is(1);
 
-                var f = exec.Select<MyClass>("select * from MyClass where Huga = -9999").First();
-                f.Is(new MyClass
-                {
-                    Hoge = "buhi",
-                    Huga = -9999,
-                    Tako = "osaka"
-                });
+                var f = exec.Select<Type>("select top 1 * from Types order by TypeId desc").First();
+                f.Is(t => t.Name == "NewTypeEXECUTE");
 
                 // Transaction Uncommit
             }
 
             // Transaction Rollback test.
-            DbExecutor.Select<MyClass>(CreateConnection(), "select * from MyClass where Huga = -9999")
-                .Count()
-                .Is(0);
+            var xs = DbExecutor.Select<Type>(connectionFactory(), "select * from Types where TypeId = 5").ToArray();
+            xs.Count().Is(0);
         }
 
         [TestMethod]
         public void ExecuteScalar()
         {
-            using (var exec = new DbExecutor(CreateConnection(), IsolationLevel.ReadCommitted))
+            using (var exec = new DbExecutor(connectionFactory()))
             {
-                var r = exec.ExecuteScalar<int>("select max(Huga) from MyClass where Huga > @Huga", new { Huga = 0 });
-                r.Is(100);
+                var r = exec.ExecuteScalar<int>("select max(TypeId) from Types where TypeId <= @TypeId", new { TypeId = 2 });
+                r.Is(2);
             }
 
-            var dt = DbExecutor.ExecuteScalar<DateTime>(CreateConnection(), "select GETDATE()");
+            var dt = DbExecutor.ExecuteScalar<DateTime>(connectionFactory(), "select GETDATE()");
             dt.Day.Is(DateTime.Now.Day);
         }
 
         [TestMethod]
         public void Select()
         {
+            using (var exec = new DbExecutor(connectionFactory()))
+            {
+                var r = exec.Select<Type>("select * from Types where TypeId <= @TypeId", new { TypeId = 2 }).ToArray();
+                r.Length.Is(2);
+                r[0].Is(t => t.TypeId == 1 && t.Name == "Int32");
+                r[1].Is(t => t.TypeId == 2 && t.Name == "String");
+            }
 
+            var methods = DbExecutor.Select<Method>(connectionFactory(), @"
+                    select M.*
+                    from Methods M
+                    join Types T on M.TypeId = T.TypeId
+                    where T.Name = @TypeName
+                    ", new { TypeName = "String" })
+                .ToArray();
+            methods.Length.Is(3);
+            methods.Select(x => x.Name).Is("StartsWith", "EndsWith", "Contains");
         }
 
         [TestMethod]
         public void SelectDynamic()
         {
+            using (var exec = new DbExecutor(connectionFactory()))
+            {
+                var r = exec.SelectDynamic("select * from Types where TypeId <= @TypeId", new { TypeId = 2 }).ToArray();
+                r.Length.Is(2);
+                r.Select(x => x.TypeId).Is(1, 2);
+                r.Select(x => x.Name).Is("Int32", "String");
+            }
 
+            var methods = DbExecutor.SelectDynamic(connectionFactory(), @"
+                    select M.*
+                    from Methods M
+                    join Types T on M.TypeId = T.TypeId
+                    where T.Name = @TypeName
+                    ", new { TypeName = "String" })
+                .ToArray();
+            methods.Length.Is(3);
+            methods.Select(x => x.Name).Is("StartsWith", "EndsWith", "Contains");
         }
 
         [TestMethod]
         public void Delete()
         {
+            using (var exec = new DbExecutor(connectionFactory(), IsolationLevel.ReadCommitted))
+            {
+                exec.Select<Type>("select * from Types")
+                    .Any(x => x.TypeId == 2)
+                    .Is(true);
 
+                exec.Delete("Types", new { TypeId = 2 });
+
+                exec.Select<Type>("select * from Types")
+                    .Any(x => x.TypeId == 2)
+                    .Is(false);
+            }
         }
 
         [TestMethod]
         public void Insert()
         {
+            using (var exec = new DbExecutor(connectionFactory(), IsolationLevel.ReadCommitted))
+            {
+                exec.Insert("Types", new { Name = "NewType1" });
+                exec.TransactionComplete(); // Transaction Commit
+            }
+            DbExecutor.Insert(connectionFactory(), "Types", new { Name = "NewType2" });
 
+            DbExecutor.Select<Type>(connectionFactory(),
+                    "select * from Types where Name like @Name", new { Name = "NewType%" })
+                .Count()
+                .Is(2);
 
+            DbExecutor.Delete(connectionFactory(), "Types", new { Name = "NewType1" });
+            DbExecutor.Delete(connectionFactory(), "Types", new { Name = "NewType2" });
+
+            DbExecutor.Select<Type>(connectionFactory(),
+                 "select * from Types where Name like @Name", new { Name = "NewType%" })
+             .Count()
+             .Is(0);
         }
 
         [TestMethod]
         public void Update()
         {
-            DbExecutor.Update(CreateConnection(), "MyClass",
-                new { Hoge = "hoge", Huga = 100, Tako = "yaki" },
-                new { Huga = 10000, Tako = "YAKI!" });
+            using (var exec = new DbExecutor(connectionFactory(), IsolationLevel.ReadCommitted))
+            {
+                exec.Select<Type>("select * from Types where TypeId = 1")
+                    .First()
+                    .Is(x => x.Name == "Int32");
+
+                exec.Update("Types", new { Name = "UpdateName" }, new { TypeId = 1 });
+
+                exec.Select<Type>("select * from Types where TypeId = 1")
+                    .First()
+                    .Is(x => x.Name == "UpdateName");
+            }
+
+            DbExecutor.Select<Type>(connectionFactory(), "select * from Types where TypeId = 1")
+                .First()
+                .Is(x => x.Name == "Int32");
+            
+            DbExecutor.Update(connectionFactory(), "Types", new { Name = "UpdateName" }, new { TypeId = 1 });
+
+            DbExecutor.Select<Type>(connectionFactory(), "select * from Types where TypeId = 1")
+                .First()
+                .Is(x => x.Name == "UpdateName");
+
+            DbExecutor.Update(connectionFactory(), "Types", new { Name = "Int32" }, new { TypeId = 1 });
         }
     }
 }

@@ -108,11 +108,12 @@ namespace DbExecutorTest
             accessors[1].SetValue(target, 1);
             accessors[3].SetValue(target, 2);
             accessors[5].SetValue(target, 3);
-            accessors[7].SetValue(target, 4);
-            accessors.Where(a => a.IsReadable).Select(a => a.GetValue(target)).Is("a", 1, "b", 2, "c", 3, "d", 4, null);
+            accessors[7].IsWritable.Is(false);
+            accessors.Where(a => a.IsReadable).Select(a => a.GetValue(target))
+                .Is("a", 1, "b", 2, null, 0, null);
             Enumerable.Repeat((target as TestMockClass), 1)
                 .SelectMany(m => new object[] { m.Field1, m.Field2, m.Property1, m.Property2, m.Property5, m.Property6 })
-                .Is("a", 1, "b", 2, "d", 4);
+                .Is("a", 1, "b", 2, null, 0);
 
             var read = accessors[8];
             read.IsReadable.Is(true);
@@ -142,15 +143,16 @@ namespace DbExecutorTest
             accessors[0].SetValue(target, "a");
             accessors[2].SetValue(target, "b");
             accessors[4].SetValue(target, "c");
-            accessors[6].SetValue(target, "d");
+            accessors[6].IsWritable.Is(false);
             accessors[1].SetValue(target, 1);
             accessors[3].SetValue(target, 2);
             accessors[5].SetValue(target, 3);
-            accessors[7].SetValue(target, 4);
-            accessors.Where(a => a.IsReadable).Select(a => a.GetValue(target)).Is("a", 1, "b", 2, "c", 3, "d", 4, null);
+            accessors[7].IsWritable.Is(false);
+            accessors.Where(a => a.IsReadable).Select(a => a.GetValue(target))
+                .Is("a", 1, "b", 2, null, 0, null);
             Enumerable.Repeat((TestMockStruct)target, 1)
                 .SelectMany(m => new object[] { m.Field1, m.Field2, m.Property1, m.Property2, m.Property5, m.Property6 })
-                .Is("a", 1, "b", 2, "d", 4);
+                .Is("a", 1, "b", 2, null, 0);
 
             var read = accessors[8];
             read.IsReadable.Is(true);

@@ -11,6 +11,7 @@ namespace Codeplex.Data.Internal
         static readonly Dictionary<Type, IKeyIndexed<string, IMemberAccessor>>
             cache = new Dictionary<Type, IKeyIndexed<string, IMemberAccessor>>();
 
+        [Pure]
         public static IKeyIndexed<string, ExpressionAccessor> Lookup(Type targetType)
         {
             Contract.Requires<ArgumentNullException>(targetType != null);

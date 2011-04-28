@@ -17,6 +17,7 @@ namespace Codeplex.Data.Internal
             return new ReadOnlyKeyIndexedCollection<TKey, TElement>(source.ToDictionary(x => keySelector(x), x => elementSelector(x)));
         }
 
+        [Pure]
         class ReadOnlyKeyIndexedCollection<TKey, TElement> : IKeyIndexed<TKey, TElement>
         {
             readonly Dictionary<TKey, TElement> source;

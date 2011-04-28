@@ -8,7 +8,7 @@ using Codeplex.Data.Internal;
 
 namespace Codeplex.Data
 {
-    /// <summary>Simple and Lightweight Linq based Database Executor.</summary>
+    /// <summary>Simple and Lightweight Database Executor.</summary>
     public partial class DbExecutor : IDisposable
     {
         readonly IDbConnection connection;
@@ -95,7 +95,16 @@ namespace Codeplex.Data
             return command;
         }
 
-        /// <summary>Executes and returns the data records."</summary>
+        IEnumerable<IDataRecord> YieldReaderHelper(string query, object parameter, CommandType commandType, CommandBehavior commandBehavior)
+        {
+            using (var command = PrepareExecute(query, commandType, parameter))
+            using (var reader = command.ExecuteReader(commandBehavior))
+            {
+                while (reader.Read()) yield return reader;
+            }
+        }
+
+        /// <summary>Executes and returns the data records.</summary>
         /// <param name="query">SQL code.</param>
         /// <param name="parameter">PropertyName parameterized to PropertyName. if null then no use parameter.</param>
         /// <param name="commandType">Command Type.</param>
@@ -106,23 +115,11 @@ namespace Codeplex.Data
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<IDataRecord>>() != null);
 
-            using (var command = PrepareExecute(query, commandType, parameter))
-            using (var reader = command.ExecuteReader(commandBehavior))
-            {
-                while (reader.Read()) yield return reader;
-            }
+            return YieldReaderHelper(query, parameter, commandType, commandBehavior);
         }
 
-        /// <summary>Executes and returns the data records enclosing DynamicDataRecord."</summary>
-        /// <param name="query">SQL code.</param>
-        /// <param name="parameter">PropertyName parameterized to PropertyName. if null then no use parameter.</param>
-        /// <param name="commandType">Command Type.</param>
-        /// <param name="commandBehavior">Command Behavior.</param>
-        /// <returns>Query results. Result type is DynamicDataRecord.</returns>
-        public IEnumerable<dynamic> ExecuteReaderDynamic(string query, object parameter = null, CommandType commandType = CommandType.Text, CommandBehavior commandBehavior = CommandBehavior.Default)
+        IEnumerable<dynamic> YieldReaderDynamicHelper(string query, object parameter, CommandType commandType, CommandBehavior commandBehavior)
         {
-            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
-
             using (var command = PrepareExecute(query, commandType, parameter))
             using (var reader = command.ExecuteReader(commandBehavior))
             {
@@ -131,7 +128,21 @@ namespace Codeplex.Data
             }
         }
 
-        /// <summary>Executes and returns the number of rows affected."</summary>
+        /// <summary>Executes and returns the data records enclosing DynamicDataRecord.</summary>
+        /// <param name="query">SQL code.</param>
+        /// <param name="parameter">PropertyName parameterized to PropertyName. if null then no use parameter.</param>
+        /// <param name="commandType">Command Type.</param>
+        /// <param name="commandBehavior">Command Behavior.</param>
+        /// <returns>Query results. Result type is DynamicDataRecord.</returns>
+        public IEnumerable<dynamic> ExecuteReaderDynamic(string query, object parameter = null, CommandType commandType = CommandType.Text, CommandBehavior commandBehavior = CommandBehavior.Default)
+        {
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
+            Contract.Ensures(Contract.Result<IEnumerable<dynamic>>() != null);
+
+            return YieldReaderDynamicHelper(query, parameter, commandType, commandBehavior);
+        }
+
+        /// <summary>Executes and returns the number of rows affected.</summary>
         /// <param name="query">SQL code.</param>
         /// <param name="parameter">PropertyName parameterized to PropertyName. if null then no use parameter.</param>
         /// <param name="commandType">Command Type.</param>
@@ -166,7 +177,7 @@ namespace Codeplex.Data
             }
         }
 
-        /// <summary>Executes and mapping objects by ColumnName - PropertyName."</summary>
+        /// <summary>Executes and mapping objects by ColumnName - PropertyName.</summary>
         /// <typeparam name="T">Mapping target Class.</typeparam>
         /// <param name="query">SQL code.</param>
         /// <param name="parameter">PropertyName parameterized to PropertyName. if null then no use parameter.</param>
@@ -195,7 +206,7 @@ namespace Codeplex.Data
                 });
         }
 
-        /// <summary>Executes and mapping objects to ExpandoObject. Object is dynamic accessable by ColumnName."</summary>
+        /// <summary>Executes and mapping objects to ExpandoObject. Object is dynamic accessable by ColumnName.</summary>
         /// <param name="query">SQL code.</param>
         /// <param name="parameter">PropertyName parameterized to PropertyName. if null then no use parameter.</param>
         /// <param name="commandType">Command Type.</param>
@@ -218,14 +229,14 @@ namespace Codeplex.Data
                 });
         }
 
-        /// <summary>Insert by object's PropertyName."</summary>
+        /// <summary>Insert by object's PropertyName.</summary>
         /// <param name="tableName">Target database's table.</param>
         /// <param name="insertItem">Table's column name extracted from PropertyName.</param>
         /// <returns>Rows affected.</returns>
         public int Insert(string tableName, object insertItem)
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(tableName));
-            Contract.Requires(insertItem != null);
+            Contract.Requires<ArgumentNullException>(insertItem != null);
 
             var propNames = AccessorCache.Lookup(insertItem.GetType())
                 .Where(p => p.IsReadable)
@@ -239,7 +250,7 @@ namespace Codeplex.Data
             return ExecuteNonQuery(query, insertItem);
         }
 
-        /// <summary>Update by object's PropertyName."</summary>
+        /// <summary>Update by object's PropertyName.</summary>
         /// <param name="tableName">Target database's table.</param>
         /// <param name="updateItem">Table's column name extracted from PropertyName.</param>
         /// <param name="whereCondition">Where condition extracted from PropertyName.</param>
@@ -266,7 +277,7 @@ namespace Codeplex.Data
             }
         }
 
-        /// <summary>Delete by object's PropertyName."</summary>
+        /// <summary>Delete by object's PropertyName.</summary>
         /// <param name="tableName">Target database's table.</param>
         /// <param name="whereCondition">Where condition extracted from PropertyName.</param>
         /// <returns>Rows affected.</returns>
