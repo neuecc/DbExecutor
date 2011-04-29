@@ -93,7 +93,6 @@ namespace Codeplex.Data
         {
             Contract.Requires<ArgumentNullException>(connection != null);
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
-            Contract.Ensures(Contract.Result<T>() != null);
 
             using (var exec = new DbExecutor(connection))
             {

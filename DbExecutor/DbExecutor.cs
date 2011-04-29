@@ -166,14 +166,10 @@ namespace Codeplex.Data
         public T ExecuteScalar<T>(string query, object parameter = null, CommandType commandType = CommandType.Text)
         {
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
-            Contract.Ensures(Contract.Result<T>() != null);
 
             using (var command = PrepareExecute(query, commandType, parameter))
             {
-                var result = (T)command.ExecuteScalar();
-
-                Contract.Assume(result != null);
-                return result;
+                return (T)command.ExecuteScalar();
             }
         }
 
