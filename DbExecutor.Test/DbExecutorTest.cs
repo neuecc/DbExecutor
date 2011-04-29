@@ -102,12 +102,17 @@ namespace DbExecutorTest
         {
             using (var exec = new DbExecutor(connectionFactory()))
             {
-                var r = exec.ExecuteScalar<int>("select max(TypeId) from Types where TypeId <= @TypeId", new { TypeId = 2 });
-                r.Is(2);
+                exec.ExecuteScalar<int>("select max(TypeId) from Types where TypeId <= @TypeId", new { TypeId = 2 })
+                    .Is(2);
+                exec.ExecuteScalar<int?>("select TypeId from Types where TypeId = -1000")
+                    .IsNull();
             }
 
-            var dt = DbExecutor.ExecuteScalar<DateTime>(connectionFactory(), "select GETDATE()");
-            dt.Day.Is(DateTime.Now.Day);
+            DbExecutor.ExecuteScalar<DateTime>(connectionFactory(), "select GETDATE()")
+                .Day.Is(DateTime.Now.Day);
+
+            DbExecutor.ExecuteScalar<int?>(connectionFactory(), "select TypeId from Types where TypeId = -1000")
+                .IsNull();
         }
 
         [TestMethod]
@@ -214,7 +219,7 @@ namespace DbExecutorTest
             DbExecutor.Select<Type>(connectionFactory(), "select * from Types where TypeId = 1")
                 .First()
                 .Is(x => x.Name == "Int32");
-            
+
             DbExecutor.Update(connectionFactory(), "Types", new { Name = "UpdateName" }, new { TypeId = 1 });
 
             DbExecutor.Select<Type>(connectionFactory(), "select * from Types where TypeId = 1")

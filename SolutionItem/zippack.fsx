@@ -31,4 +31,4 @@ do
     |> Seq.map (fun x -> new FileInfo(pass x)) 
     |> Seq.iter (fun x -> zip.AddFile(x.FullName, "CodeContracts") |> ignore)
     
-    pass "DbExecutor_2.0.0.0.zip" |> zip.Save
+    pass "DbExecutor_2.0.0.1.zip" |> zip.Save

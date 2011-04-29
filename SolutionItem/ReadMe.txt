@@ -1,6 +1,6 @@
 /*--------------------------------------------------------------------------
  * DbExecutor
- * ver 2.0.0.0 (Apr. 29th, 2011)
+ * ver 2.0.0.1 (Apr. 30th, 2011)
  *
  * created and maintained by neuecc <ils@neue.cc - @neuecc on Twitter>
  * licensed under Microsoft Public License(Ms-PL)
@@ -66,10 +66,25 @@ using (var exec = new DbExecutor(new SqlConnection(connStr), IsolationLevel.Read
 
 /* more api information see Codeplex site. */
 
+// notice for build from source code
+
+source code marked contracts.
+need Code Contracts binary rewriter.
+
+unit test written by MSTest.
+need Visual Studio Professional or over.
+
+testing library downloaded by NuGet.
+* ChainingAssertion
+* EntityFramework
+* Sql Server Compact
 
 // history
 
-2011-04-28 ver 2.0.0.0
+2011-04-30 ver 2.0.0.1
+    Fix ExecuteScalar remove Contracts result != null
+
+2011-04-29 ver 2.0.0.0
     Full scratch renew
 
 2010-04-08 ver 1.0.0.1
