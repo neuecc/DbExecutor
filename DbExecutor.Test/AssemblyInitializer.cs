@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Data.Entity;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Data.Entity.Infrastructure;
 using System.Diagnostics.Contracts;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace DbExecutorTest
 {

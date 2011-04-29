@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics.Contracts;
 using System.Reflection;
-using System.Linq.Expressions;
 
 namespace Codeplex.Data.Internal
 {

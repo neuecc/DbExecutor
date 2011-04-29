@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
-using System.Reflection;
 using System.Linq;
+using System.Reflection;
 
 namespace Codeplex.Data.Internal
 {

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics.Contracts;
-using System.Reflection;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Codeplex.Data.Internal
 {

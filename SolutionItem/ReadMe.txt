@@ -2,15 +2,14 @@
  * DbExecutor
  * ver 2.0.0.0 (Apr. 29th, 2011)
  *
- * created and maintained by neuecc <ils@neue.cc>
+ * created and maintained by neuecc <ils@neue.cc - @neuecc on Twitter>
  * licensed under Microsoft Public License(Ms-PL)
- * http://neue.cc/
  * http://dbexecutor.codeplex.com/
  *-------------------------------------------------------------------------*/
 
 // Description
 
-Simple and Lightweight Database Executor for .NET 4 Client Profile and All ADO.NET DbProviders.
+Simple and Lightweight Database Executor for .NET 4 Client Profile and all ADO.NET DbProviders.
 
 // Features
 
@@ -18,6 +17,7 @@ set command parameter by AnonymousType
 auto type mapping
 dynamic IDataRecord accessor
 transaction
+Code Contracts
 basic Select/Insert/Delete/Update query build
 available NuGet install
 
