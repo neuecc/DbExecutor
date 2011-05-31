@@ -114,6 +114,7 @@
     <Compile Include="Internal\AccessorCache.cs" />
     <Compile Include="Internal\KeyIndexed.cs" />
     <Compile Include="DynamicDataRecord.cs" />
+    <Compile Include="MultipleReader.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0">

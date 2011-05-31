@@ -121,6 +121,7 @@
     <Compile Include="DbExecutorTest.cs" />
     <Compile Include="MemberAccessorTest.cs" />
     <Compile Include="AssemblyInitializer.cs" />
+    <Compile Include="MultipleReaderTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

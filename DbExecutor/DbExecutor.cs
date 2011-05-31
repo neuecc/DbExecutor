@@ -173,6 +173,24 @@ namespace Codeplex.Data
             }
         }
 
+        /// <summary>Executes and returns multiple reader.</summary>
+        /// <param name="query">SQL code.</param>
+        /// <param name="parameter">PropertyName parameterized to PropertyName. if null then no use parameter.</param>
+        /// <param name="commandType">Command Type.</param>
+        /// <param name="commandBehavior">Command Behavior.</param>
+        /// <returns>MultipleReader.</returns>
+        public MultipleReader ExecuteMultiple(string query, object parameter = null, CommandType commandType = CommandType.Text, CommandBehavior commandBehavior = CommandBehavior.Default)
+        {
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
+
+            using (var command = PrepareExecute(query, commandType, parameter))
+            {
+                var reader = command.ExecuteReader(commandBehavior);
+                Contract.Assume(reader != null);
+                return new MultipleReader(reader);
+            }
+        }
+
         /// <summary>Executes and mapping objects by ColumnName - PropertyName.</summary>
         /// <typeparam name="T">Mapping target Class.</typeparam>
         /// <param name="query">SQL code.</param>
