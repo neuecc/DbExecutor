@@ -7,7 +7,7 @@ namespace Codeplex.Data
 {
     public partial class DbExecutor : IDisposable
     {
-        static IEnumerable<IDataRecord> ExecuteReaderHelper(IDbConnection connection, string query, object parameter, CommandType commandType, CommandBehavior commandBehavior)
+        static IEnumerable<IDataRecord> ExecuteReaderCore(IDbConnection connection, string query, object parameter, CommandType commandType, CommandBehavior commandBehavior)
         {
             using (var exec = new DbExecutor(connection))
             {
@@ -32,10 +32,10 @@ namespace Codeplex.Data
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<IDataRecord>>() != null);
 
-            return ExecuteReaderHelper(connection, query, parameter, commandType, commandBehavior);
+            return ExecuteReaderCore(connection, query, parameter, commandType, commandBehavior);
         }
 
-        static IEnumerable<dynamic> ExecuteReaderDynamicHelper(IDbConnection connection, string query, object parameter, CommandType commandType, CommandBehavior commandBehavior)
+        static IEnumerable<dynamic> ExecuteReaderDynamicCore(IDbConnection connection, string query, object parameter, CommandType commandType, CommandBehavior commandBehavior)
         {
             using (var exec = new DbExecutor(connection))
             {
@@ -60,7 +60,7 @@ namespace Codeplex.Data
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<dynamic>>() != null);
 
-            return ExecuteReaderDynamicHelper(connection, query, parameter, commandType, commandBehavior);
+            return ExecuteReaderDynamicCore(connection, query, parameter, commandType, commandBehavior);
         }
 
         /// <summary>Executes and returns the number of rows affected.<para>When done dispose connection.</para></summary>
@@ -100,7 +100,7 @@ namespace Codeplex.Data
             }
         }
 
-        static IEnumerable<T> SelectHelper<T>(IDbConnection connection, string query, object parameter, CommandType commandType)
+        static IEnumerable<T> SelectCore<T>(IDbConnection connection, string query, object parameter, CommandType commandType)
             where T : new()
         {
             using (var exec = new DbExecutor(connection))
@@ -127,11 +127,11 @@ namespace Codeplex.Data
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<T>>() != null);
 
-            return SelectHelper<T>(connection, query, parameter, commandType);
+            return SelectCore<T>(connection, query, parameter, commandType);
         }
 
 
-        static IEnumerable<dynamic> SelectDynamicHelper(IDbConnection connection, string query, object parameter, CommandType commandType)
+        static IEnumerable<dynamic> SelectDynamicCore(IDbConnection connection, string query, object parameter, CommandType commandType)
         {
             using (var exec = new DbExecutor(connection))
             {
@@ -155,7 +155,7 @@ namespace Codeplex.Data
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<dynamic>>() != null);
 
-            return SelectDynamicHelper(connection, query, parameter, commandType);
+            return SelectDynamicCore(connection, query, parameter, commandType);
         }
 
         /// <summary>Insert by object's PropertyName.<para>When done dispose connection.</para></summary>

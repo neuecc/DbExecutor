@@ -95,7 +95,7 @@ namespace Codeplex.Data
             return command;
         }
 
-        IEnumerable<IDataRecord> YieldReaderHelper(string query, object parameter, CommandType commandType, CommandBehavior commandBehavior)
+        IEnumerable<IDataRecord> ExecuteReaderCore(string query, object parameter, CommandType commandType, CommandBehavior commandBehavior)
         {
             using (var command = PrepareExecute(query, commandType, parameter))
             using (var reader = command.ExecuteReader(commandBehavior))
@@ -115,10 +115,10 @@ namespace Codeplex.Data
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<IDataRecord>>() != null);
 
-            return YieldReaderHelper(query, parameter, commandType, commandBehavior);
+            return ExecuteReaderCore(query, parameter, commandType, commandBehavior);
         }
 
-        IEnumerable<dynamic> YieldReaderDynamicHelper(string query, object parameter, CommandType commandType, CommandBehavior commandBehavior)
+        IEnumerable<dynamic> ExecuteReaderDynamicCore(string query, object parameter, CommandType commandType, CommandBehavior commandBehavior)
         {
             using (var command = PrepareExecute(query, commandType, parameter))
             using (var reader = command.ExecuteReader(commandBehavior))
@@ -139,7 +139,7 @@ namespace Codeplex.Data
             Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
             Contract.Ensures(Contract.Result<IEnumerable<dynamic>>() != null);
 
-            return YieldReaderDynamicHelper(query, parameter, commandType, commandBehavior);
+            return ExecuteReaderDynamicCore(query, parameter, commandType, commandBehavior);
         }
 
         /// <summary>Executes and returns the number of rows affected.</summary>
@@ -191,6 +191,21 @@ namespace Codeplex.Data
             }
         }
 
+        internal T SelectCore<T>(IDataRecord dataRecord, IKeyIndexed<string, ExpressionAccessor> accessors) where T : new()
+        {
+            // if T is ValueType then can't set SetValue
+            // must be boxed
+            object result = new T();
+            for (int i = 0; i < dataRecord.FieldCount; i++)
+            {
+                if (dataRecord.IsDBNull(i)) continue;
+
+                var accessor = accessors[dataRecord.GetName(i)];
+                if (accessor != null && accessor.IsWritable) accessor.SetValueDirect(result, dataRecord[i]);
+            }
+            return (T)result;
+        }
+
         /// <summary>Executes and mapping objects by ColumnName - PropertyName.</summary>
         /// <typeparam name="T">Mapping target Class.</typeparam>
         /// <param name="query">SQL code.</param>
@@ -204,20 +219,18 @@ namespace Codeplex.Data
 
             var accessors = AccessorCache.Lookup(typeof(T));
             return ExecuteReader(query, parameter, commandType, CommandBehavior.SequentialAccess)
-                .Select(dr =>
-                {
-                    // if T is ValueType then can't set SetValue
-                    // must be boxed
-                    object result = new T();
-                    for (int i = 0; i < dr.FieldCount; i++)
-                    {
-                        if (dr.IsDBNull(i)) continue;
+                .Select(dr => SelectCore<T>(dr, accessors));
+        }
 
-                        var accessor = accessors[dr.GetName(i)];
-                        if (accessor != null && accessor.IsWritable) accessor.SetValueDirect(result, dr[i]);
-                    }
-                    return (T)result;
-                });
+        internal dynamic SelectDynamicCore(IDataRecord dataRecord)
+        {
+            IDictionary<string, object> expando = new ExpandoObject();
+            for (int i = 0; i < dataRecord.FieldCount; i++)
+            {
+                var value = dataRecord.IsDBNull(i) ? null : dataRecord.GetValue(i);
+                expando.Add(dataRecord.GetName(i), value);
+            }
+            return expando;
         }
 
         /// <summary>Executes and mapping objects to ExpandoObject. Object is dynamic accessable by ColumnName.</summary>
@@ -231,16 +244,7 @@ namespace Codeplex.Data
             Contract.Ensures(Contract.Result<IEnumerable<dynamic>>() != null);
 
             return ExecuteReader(query, parameter, commandType, CommandBehavior.SequentialAccess)
-                .Select(dr =>
-                {
-                    IDictionary<string, object> expando = new ExpandoObject();
-                    for (int i = 0; i < dr.FieldCount; i++)
-                    {
-                        var value = dr.IsDBNull(i) ? null : dr.GetValue(i);
-                        expando.Add(dr.GetName(i), value);
-                    }
-                    return expando;
-                });
+                .Select(SelectDynamicCore);
         }
 
         /// <summary>Insert by object's PropertyName.</summary>
