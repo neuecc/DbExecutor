@@ -5,6 +5,8 @@ using System.Diagnostics.Contracts;
 using System.Dynamic;
 using System.Linq;
 using Codeplex.Data.Internal;
+using System.Collections;
+using System.Text;
 
 namespace Codeplex.Data
 {
@@ -70,10 +72,31 @@ namespace Codeplex.Data
                     if (!p.IsReadable) continue;
 
                     Contract.Assume(parameter != null);
-                    var param = command.CreateParameter();
-                    param.ParameterName = p.Name;
-                    param.Value = p.GetValueDirect(parameter);
-                    command.Parameters.Add(param);
+
+                    // TODO:where in test
+                    var value = p.GetValueDirect(parameter);
+                    if (value is IEnumerable && !(value is string))
+                    {
+                        var values = ((IEnumerable)value).Cast<object>().ToArray();
+                        var sb = new StringBuilder().Append("(");
+                        for (int i = 0; i < values.Length; i++)
+                        {
+                            var param = command.CreateParameter();
+                            param.ParameterName = parameterSymbol + p.Name + "__" + i;
+                            sb.Append(param.ParameterName);
+                            if (i != values.Length - 1) sb.Append(", ");
+                            param.Value = values[i];
+                            command.Parameters.Add(param);
+                        }
+                        query = query.Replace(parameterSymbol + p.Name, sb.Append(")").ToString());
+                    }
+                    else
+                    {
+                        var param = command.CreateParameter();
+                        param.ParameterName = p.Name;
+                        param.Value = value;
+                        command.Parameters.Add(param);
+                    }
                 }
             }
             if (extraParameter != null)

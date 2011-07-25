@@ -228,5 +228,15 @@ namespace DbExecutorTest
 
             DbExecutor.Update(connectionFactory(), "Types", new { Name = "Int32" }, new { TypeId = 1 });
         }
+
+        [TestMethod]
+        public void WhereInTest()
+        {
+            
+            using(var exec = new DbExecutor(connectionFactory()))
+            {
+                var test = (IDbCommand)exec.AsDynamic().PrepareExecute("select * from Test", CommandType.Text, null);
+            }
+        }
     }
 }
