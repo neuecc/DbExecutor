@@ -12,10 +12,10 @@ namespace Codeplex.Data.Internal
             cache = new Dictionary<Type, IKeyIndexed<string, IMemberAccessor>>();
 
         [Pure]
-        public static IKeyIndexed<string, ExpressionAccessor> Lookup(Type targetType)
+        public static IKeyIndexed<string, CompiledAccessor> Lookup(Type targetType)
         {
             Contract.Requires<ArgumentNullException>(targetType != null);
-            Contract.Ensures(Contract.Result<IKeyIndexed<string, ExpressionAccessor>>() != null);
+            Contract.Ensures(Contract.Result<IKeyIndexed<string, CompiledAccessor>>() != null);
 
             lock (cache)
             {
@@ -23,17 +23,17 @@ namespace Codeplex.Data.Internal
                 if (!cache.TryGetValue(targetType, out accessors))
                 {
                     var props = targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetProperty | BindingFlags.SetProperty)
-                        .Select(pi => new ExpressionAccessor(pi));
+                        .Select(pi => new CompiledAccessor(pi));
 
                     var fields = targetType.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetField | BindingFlags.SetField)
-                      .Select(fi => new ExpressionAccessor(fi));
+                      .Select(fi => new CompiledAccessor(fi));
 
                     accessors = KeyIndexed.Create(props.Concat(fields), a => a.Name, a => a);
                     cache.Add(targetType, accessors);
                 };
 
                 Contract.Assume(accessors != null);
-                return (IKeyIndexed<string, ExpressionAccessor>)accessors;
+                return (IKeyIndexed<string, CompiledAccessor>)accessors;
             }
         }
     }

@@ -162,7 +162,7 @@ namespace DbExecutorTest
         public void AnonymousType()
         {
             var anon = new { P1 = "HOGE", P2 = 1000 };
-            var xs = anon.GetType().GetProperties().Select(p => new ExpressionAccessor(p)).OrderBy(x => x.Name).ToArray();
+            var xs = anon.GetType().GetProperties().Select(p => new CompiledAccessor(p)).OrderBy(x => x.Name).ToArray();
 
             xs.Length.Is(2);
             xs.Select(a => a.DeclaringType).All(t => t == anon.GetType());

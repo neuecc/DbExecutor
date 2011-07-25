@@ -214,7 +214,7 @@ namespace Codeplex.Data
             }
         }
 
-        internal T SelectCore<T>(IDataRecord dataRecord, IKeyIndexed<string, ExpressionAccessor> accessors) where T : new()
+        internal T SelectCore<T>(IDataRecord dataRecord, IKeyIndexed<string, CompiledAccessor> accessors) where T : new()
         {
             // if T is ValueType then can't set SetValue
             // must be boxed

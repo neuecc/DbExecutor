@@ -6,7 +6,7 @@ using System.Reflection;
 namespace Codeplex.Data.Internal
 {
     /// <summary>Delegate accessor created from expression tree.</summary>
-    internal class ExpressionAccessor : IMemberAccessor
+    internal class CompiledAccessor : IMemberAccessor
     {
         public Type DeclaringType { get; private set; }
         public string Name { get; private set; }
@@ -17,7 +17,7 @@ namespace Codeplex.Data.Internal
         public readonly Func<object, object> GetValueDirect;
         public readonly Action<object, object> SetValueDirect;
 
-        public ExpressionAccessor(PropertyInfo info)
+        public CompiledAccessor(PropertyInfo info)
         {
             Contract.Requires<ArgumentNullException>(info != null);
 
@@ -27,7 +27,7 @@ namespace Codeplex.Data.Internal
             this.SetValueDirect = (info.GetSetMethod(false) != null) ? CreateSetValue(DeclaringType, Name) : null;
         }
 
-        public ExpressionAccessor(FieldInfo info)
+        public CompiledAccessor(FieldInfo info)
         {
             Contract.Requires<ArgumentNullException>(info != null);
 
