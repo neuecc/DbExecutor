@@ -5,6 +5,7 @@ using System.Data.SqlClient;
 using System.Diagnostics.Contracts;
 using System.Reactive.Linq;
 using Codeplex.Data.Internal;
+using System.Xml;
 
 namespace Codeplex.Data
 {
@@ -12,21 +13,27 @@ namespace Codeplex.Data
     {
         public AsyncDbExecutor(string connectionString)
             : base(new SqlConnection(connectionString))
-        { }
+        {
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(connectionString));
+        }
 
         public AsyncDbExecutor(SqlConnection connection)
             : base(connection)
-        { }
+        {
+            Contract.Requires<ArgumentNullException>(connection != null);
+        }
 
         public AsyncDbExecutor(string connectionString, IsolationLevel isolationLevel)
             : base(new SqlConnection(connectionString), isolationLevel)
-        { }
+        {
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(connectionString));
+        }
 
         public AsyncDbExecutor(SqlConnection connection, IsolationLevel isolationLevel)
             : base(connection, isolationLevel)
-        { }
-
-        // TODO:Add Contract
+        {
+            Contract.Requires<ArgumentNullException>(connection != null);
+        }
 
         /// <summary>Async Executes and returns the data reader.</summary>
         /// <param name="query">SQL code.</param>
@@ -116,7 +123,40 @@ namespace Codeplex.Data
                 .Finally(() => cmd.Dispose());
         }
 
-        // TODO:other methods
+        /// <summary>Async Executes and returns the first column, first row.</summary>
+        /// <typeparam name="T">Result type.</typeparam>
+        /// <param name="query">SQL code.</param>
+        /// <param name="parameter">PropertyName parameterized to PropertyName. if null then no use parameter.</param>
+        /// <param name="commandType">Command Type.</param>
+        /// <returns>Query results of first column, first row.</returns>
+        public IObservable<T> ExecuteScalarAsync<T>(string query, object parameter = null, CommandType commandType = CommandType.Text)
+        {
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
+            Contract.Ensures(Contract.Result<IObservable<T>>() != null);
+
+            return ExecuteReaderAsync(query, parameter, commandType, CommandBehavior.SequentialAccess)
+                .Select(dr => (T)dr.GetValue(0))
+                .Take(1); // TODO:if result is empty?
+        }
+
+        /// <summary>Async Executes and returns the XmlReader.</summary>
+        /// <param name="query">SQL code.</param>
+        /// <param name="parameter">PropertyName parameterized to PropertyName. if null then no use parameter.</param>
+        /// <param name="commandType">Command Type.</param>
+        /// <returns>Query results.</returns>
+        public IObservable<XmlReader> ExecuteXmlReaderAsync(string query, object parameter = null, CommandType commandType = CommandType.Text)
+        {
+            Contract.Requires<ArgumentException>(!String.IsNullOrEmpty(query));
+            Contract.Ensures(Contract.Result<IObservable<XmlReader>>() != null);
+
+            var cmd = (SqlCommand)this.PrepareExecute(query, commandType, parameter);
+            return Observable.FromAsyncPattern<XmlReader>(
+                    (ac, o) => cmd.BeginExecuteXmlReader(ac, o), cmd.EndExecuteXmlReader)
+                .Invoke()
+                .Finally(() => cmd.Dispose());
+        }
+
+        // TODO:ExecuteMultiple?
 
         /// <summary>Async Executes and mapping objects by ColumnName - PropertyName.</summary>
         /// <typeparam name="T">Mapping target Class.</typeparam>

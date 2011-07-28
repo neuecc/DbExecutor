@@ -107,6 +107,8 @@ select * from Type
             var b = multiple.Select<Type>();
 
             var dz = a;
+
+
         }
 
         [TestMethod]
