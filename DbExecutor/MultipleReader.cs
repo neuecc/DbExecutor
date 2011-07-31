@@ -83,20 +83,7 @@ namespace Codeplex.Data
 
             var accessors = AccessorCache.Lookup(typeof(T));
             return EnumerateReader()
-                .Select(dr =>
-                {
-                    // if T is ValueType then can't set SetValue
-                    // must be boxed
-                    object result = new T();
-                    for (int i = 0; i < dr.FieldCount; i++)
-                    {
-                        if (dr.IsDBNull(i)) continue;
-
-                        var accessor = accessors[dr.GetName(i)];
-                        if (accessor != null && accessor.IsWritable) accessor.SetValueDirect(result, dr[i]);
-                    }
-                    return (T)result;
-                })
+                .Select(dr => ReaderHelper.SelectCore<T>(dr, accessors))
                 .ToArray();
         }
 
@@ -107,16 +94,7 @@ namespace Codeplex.Data
             Contract.Ensures(Contract.Result<dynamic[]>() != null);
 
             return EnumerateReader()
-                .Select(dr =>
-                {
-                    IDictionary<string, object> expando = new ExpandoObject();
-                    for (int i = 0; i < dr.FieldCount; i++)
-                    {
-                        var value = dr.IsDBNull(i) ? null : dr.GetValue(i);
-                        expando.Add(dr.GetName(i), value);
-                    }
-                    return expando;
-                })
+                .Select(ReaderHelper.SelectDynamicCore)
                 .ToArray();
         }
 

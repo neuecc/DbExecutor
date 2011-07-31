@@ -117,6 +117,7 @@
     <Compile Include="DynamicDataRecord.cs" />
     <Compile Include="MultipleReader.cs" />
     <Compile Include="Properties\CommonAssemblyInfo.cs" />
+    <Compile Include="ReaderHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.0">

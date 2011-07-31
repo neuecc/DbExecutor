@@ -57,10 +57,7 @@ namespace Codeplex.Data
         {
             using (reader)
             {
-                while (!reader.IsClosed && reader.Read())
-                {
-                    yield return reader;
-                }
+                while (!reader.IsClosed && reader.Read()) yield return reader;
             }
         }
 
@@ -84,10 +81,7 @@ namespace Codeplex.Data
             using (reader)
             {
                 var record = new DynamicDataRecord(reader); // reference same reader
-                while (!reader.IsClosed && reader.Read())
-                {
-                    yield return record;
-                }
+                while (!reader.IsClosed && reader.Read()) yield return record;
             }
         }
 
@@ -171,7 +165,7 @@ namespace Codeplex.Data
 
             var accessors = AccessorCache.Lookup(typeof(T));
             return ExecuteReaderAsync(query, parameter, commandType, CommandBehavior.SequentialAccess)
-                .Select(dr => SelectCore<T>(dr, accessors));
+                .Select(dr => ReaderHelper.SelectCore<T>(dr, accessors));
         }
 
 
@@ -186,7 +180,7 @@ namespace Codeplex.Data
             Contract.Ensures(Contract.Result<IObservable<dynamic>>() != null);
 
             return ExecuteReaderAsync(query, parameter, commandType, CommandBehavior.SequentialAccess)
-                .Select(SelectDynamicCore);
+                .Select(ReaderHelper.SelectDynamicCore);
         }
 
         // TODO:other methods

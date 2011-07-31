@@ -118,12 +118,12 @@ namespace Codeplex.Data
             return command;
         }
 
-        IEnumerable<IDataRecord> ExecuteReaderCore(string query, object parameter, CommandType commandType, CommandBehavior commandBehavior)
+        protected IEnumerable<IDataReader> ExecuteReaderCore(string query, object parameter, CommandType commandType, CommandBehavior commandBehavior)
         {
             using (var command = PrepareExecute(query, commandType, parameter))
             using (var reader = command.ExecuteReader(commandBehavior))
             {
-                while (reader.Read()) yield return reader;
+                while (!reader.IsClosed && reader.Read()) yield return reader;
             }
         }
 
@@ -147,7 +147,7 @@ namespace Codeplex.Data
             using (var reader = command.ExecuteReader(commandBehavior))
             {
                 var record = new DynamicDataRecord(reader); // reference same reader
-                while (reader.Read()) yield return record;
+                while (!reader.IsClosed && reader.Read()) yield return record;
             }
         }
 
@@ -214,21 +214,6 @@ namespace Codeplex.Data
             }
         }
 
-        internal T SelectCore<T>(IDataRecord dataRecord, IKeyIndexed<string, CompiledAccessor> accessors) where T : new()
-        {
-            // if T is ValueType then can't set SetValue
-            // must be boxed
-            object result = new T();
-            for (int i = 0; i < dataRecord.FieldCount; i++)
-            {
-                if (dataRecord.IsDBNull(i)) continue;
-
-                var accessor = accessors[dataRecord.GetName(i)];
-                if (accessor != null && accessor.IsWritable) accessor.SetValueDirect(result, dataRecord[i]);
-            }
-            return (T)result;
-        }
-
         /// <summary>Executes and mapping objects by ColumnName - PropertyName.</summary>
         /// <typeparam name="T">Mapping target Class.</typeparam>
         /// <param name="query">SQL code.</param>
@@ -242,18 +227,7 @@ namespace Codeplex.Data
 
             var accessors = AccessorCache.Lookup(typeof(T));
             return ExecuteReader(query, parameter, commandType, CommandBehavior.SequentialAccess)
-                .Select(dr => SelectCore<T>(dr, accessors));
-        }
-
-        internal dynamic SelectDynamicCore(IDataRecord dataRecord)
-        {
-            IDictionary<string, object> expando = new ExpandoObject();
-            for (int i = 0; i < dataRecord.FieldCount; i++)
-            {
-                var value = dataRecord.IsDBNull(i) ? null : dataRecord.GetValue(i);
-                expando.Add(dataRecord.GetName(i), value);
-            }
-            return expando;
+                .Select(dr => ReaderHelper.SelectCore<T>(dr, accessors));
         }
 
         /// <summary>Executes and mapping objects to ExpandoObject. Object is dynamic accessable by ColumnName.</summary>
@@ -267,7 +241,7 @@ namespace Codeplex.Data
             Contract.Ensures(Contract.Result<IEnumerable<dynamic>>() != null);
 
             return ExecuteReader(query, parameter, commandType, CommandBehavior.SequentialAccess)
-                .Select(SelectDynamicCore);
+                .Select(ReaderHelper.SelectDynamicCore);
         }
 
         /// <summary>Insert by object's PropertyName.</summary>
