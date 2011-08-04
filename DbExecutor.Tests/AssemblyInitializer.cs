@@ -105,14 +105,14 @@ namespace DbExecutorTest
             using (var exec = new DbExecutor(Db.ConnectionFactory()))
             {
                 exec.ExecuteNonQuery(@"
-if (OBJECT_ID('Type') is null)
+if (OBJECT_ID('Types') is null)
 begin
-    create table Type
+    create table Types
     (
         TypeId int identity primary key,
         Name nvarchar(max)
     )
-    create table Method
+    create table Methods
     (
         MethodId int identity primary key,
         TypeId int,
@@ -130,7 +130,7 @@ end
                 };
                 foreach (var item in types)
                 {
-                    exec.Insert("Type", new { item.Name });
+                    exec.Insert("Types", new { item.Name });
                 }
 
                 var methods = new[]
@@ -146,7 +146,7 @@ end
                 };
                 foreach (var item in methods)
                 {
-                    exec.Insert("Method", new { item.Name, item.Type.TypeId });
+                    exec.Insert("Methods", new { item.Name, item.Type.TypeId });
                 }
             }
         }
@@ -157,8 +157,8 @@ end
             using (var exec = new DbExecutor(Db.ConnectionFactory()))
             {
                 exec.ExecuteNonQuery(@"
-                    drop table Type
-                    drop table Method");
+                    drop table Types
+                    drop table Methods");
             }
         }
     }

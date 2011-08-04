@@ -85,7 +85,7 @@ namespace Codeplex.Data
                             param.ParameterName = parameterSymbol + p.Name + "__" + i;
                             sb.Append(param.ParameterName);
                             if (i != values.Length - 1) sb.Append(", ");
-                            param.Value = values[i];
+                            param.Value = (values[i] == null) ? DBNull.Value : values[i];
                             command.Parameters.Add(param);
                         }
                         query = query.Replace(parameterSymbol + p.Name, sb.Append(")").ToString());
@@ -94,7 +94,7 @@ namespace Codeplex.Data
                     {
                         var param = command.CreateParameter();
                         param.ParameterName = p.Name;
-                        param.Value = value;
+                        param.Value = (value == null) ? DBNull.Value : value;
                         command.Parameters.Add(param);
                     }
                 }
@@ -106,9 +106,11 @@ namespace Codeplex.Data
                     if (!p.IsReadable) continue;
 
                     Contract.Assume(extraParameter != null);
+
                     var param = command.CreateParameter();
                     param.ParameterName = "__extra__" + p.Name;
-                    param.Value = p.GetValueDirect(extraParameter);
+                    var value = p.GetValueDirect(extraParameter);
+                    param.Value = (value == null) ? DBNull.Value : value;
                     command.Parameters.Add(param);
                 }
             }

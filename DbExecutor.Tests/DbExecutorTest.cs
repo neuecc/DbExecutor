@@ -4,6 +4,7 @@ using System.Data.SqlServerCe;
 using System.Linq;
 using Codeplex.Data;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.Data.SqlClient;
 
 namespace DbExecutorTest
 {
@@ -201,6 +202,22 @@ namespace DbExecutorTest
         }
 
         [TestMethod]
+        public void InsertNull()
+        {
+            // TODO:AddInsertTest
+
+            using (var exec = new DbExecutor(new SqlConnection(Db.ConnectionString)))
+            {
+                exec.Insert("Types", new { Name = (string)null });
+                var xs = exec.SelectDynamic("select * from Types").ToArray();
+                object nullnull = xs[4].Name;
+                
+                //nullnull.IsNull();
+            }
+            
+        }
+
+        [TestMethod]
         public void Update()
         {
             using (var exec = new DbExecutor(connectionFactory(), IsolationLevel.ReadCommitted))
@@ -232,7 +249,7 @@ namespace DbExecutorTest
         [TestMethod]
         public void WhereInTest()
         {
-            
+            // TODO:Add WhereIn Test
             using(var exec = new DbExecutor(connectionFactory()))
             {
                 var test = (IDbCommand)exec.AsDynamic().PrepareExecute("select * from Test", CommandType.Text, null);
