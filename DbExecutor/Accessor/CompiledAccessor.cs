@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Diagnostics.Contracts;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Runtime.Serialization;
 
 namespace Codeplex.Data.Internal
 {
@@ -9,7 +11,12 @@ namespace Codeplex.Data.Internal
     internal class CompiledAccessor : IMemberAccessor
     {
         public Type DeclaringType { get; private set; }
+        [Obsolete("use MemberName instead of Name. This is only for monitoring")]
         public string Name { get; private set; }
+        public string MemberName { get; private set; }
+        public bool IsIgnoreSerialize { get; private set; }
+        public bool IsDataContractedType { get; private set; }
+        public bool IsDataContractedMember { get; private set; }
         public bool IsReadable { get { return GetValueDirect != null; } }
         public bool IsWritable { get { return SetValueDirect != null; } }
 
@@ -21,27 +28,63 @@ namespace Codeplex.Data.Internal
         {
             Contract.Requires<ArgumentNullException>(info != null);
 
-            this.Name = info.Name;
-            this.DeclaringType = info.DeclaringType;
-            this.GetValueDirect = (info.GetGetMethod(false) != null) ? CreateGetValue(DeclaringType, Name) : null;
-            this.SetValueDirect = (info.GetSetMethod(false) != null) ? CreateSetValue(DeclaringType, Name) : null;
+            InitializeFieldByDataContract(info);
+            if (!IsIgnoreSerialize)
+            {
+                var allowNonPublic = this.IsDataContractedType;
+                this.GetValueDirect = (info.GetGetMethod(allowNonPublic) != null) ? CreateGetValue(DeclaringType, MemberName) : null;
+                this.SetValueDirect = (info.GetSetMethod(allowNonPublic) != null) ? CreateSetValue(DeclaringType, MemberName) : null;
+            }
         }
 
         public CompiledAccessor(FieldInfo info)
         {
             Contract.Requires<ArgumentNullException>(info != null);
 
-            this.Name = info.Name;
-            this.DeclaringType = info.DeclaringType;
-            this.GetValueDirect = CreateGetValue(DeclaringType, Name);
-            this.SetValueDirect = (!info.IsInitOnly) ? CreateSetValue(DeclaringType, Name) : null;
+            InitializeFieldByDataContract(info);
+            if (!IsIgnoreSerialize)
+            {
+                this.GetValueDirect = CreateGetValue(DeclaringType, MemberName);
+                this.SetValueDirect = (!info.IsInitOnly || this.IsDataContractedType) ? CreateSetValue(DeclaringType, MemberName) : null;
+            }
         }
 
+        /// <summary>
+        /// set DeclaringType, IsIgnoreSerialize, IsDataContractedType, IsDataContractedMember, Name and MemberName
+        /// </summary>
+        protected void InitializeFieldByDataContract(MemberInfo info)
+        {
+#pragma warning disable 612, 618
+
+            this.DeclaringType = info.DeclaringType;
+            this.Name = this.MemberName = info.Name;
+            this.IsIgnoreSerialize = info.GetCustomAttributes(typeof(IgnoreDataMemberAttribute), false).Any();
+
+            this.IsDataContractedType = info.DeclaringType.GetCustomAttributes(typeof(DataContractAttribute), false).Any();
+            if (this.IsDataContractedType)
+            {
+                var dataMember = info.GetCustomAttributes(typeof(DataMemberAttribute), false).FirstOrDefault() as DataMemberAttribute;
+                if (dataMember != null)
+                {
+                    this.IsDataContractedMember = true;
+                    this.MemberName = dataMember.Name ?? this.Name;
+                }
+                else
+                {
+                    this.IsIgnoreSerialize = true;
+                }
+            }
+
+#pragma warning restore 612, 618
+        }
+
+        [Obsolete("use GetValueDirect instead of GetValue for the better performance.")]
         public object GetValue(object target)
         {
             return GetValueDirect(target);
         }
 
+        [Obsolete("use SetValueDirect instead of SetValue for the better performance.")]
         public void SetValue(object target, object value)
         {
             SetValueDirect(target, value);

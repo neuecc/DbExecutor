@@ -1,13 +1,20 @@
 ﻿using System;
 using System.Diagnostics.Contracts;
+using System.Linq;
+using System.Reflection;
+using System.Runtime.Serialization;
 
 namespace Codeplex.Data.Internal
 {
     [ContractClass(typeof(IMemberAccessorContract))]
-    internal partial interface IMemberAccessor
+    internal interface IMemberAccessor
     {
         string Name { get; }
+        string MemberName { get; }
         Type DeclaringType { get; }
+        bool IsDataContractedType { get; }
+        bool IsDataContractedMember { get; }
+        bool IsIgnoreSerialize { get; }
         bool IsReadable { get; }
         bool IsWritable { get; }
 
@@ -27,6 +34,15 @@ namespace Codeplex.Data.Internal
             }
         }
 
+        public string MemberName
+        {
+            get
+            {
+                Contract.Ensures(!String.IsNullOrEmpty(Contract.Result<string>()));
+                return default(string);
+            }
+        }
+
         public Type DeclaringType
         {
             get
@@ -34,6 +50,22 @@ namespace Codeplex.Data.Internal
                 Contract.Ensures(Contract.Result<Type>() != null);
                 return default(Type);
             }
+        }
+
+        public bool IsIgnoreSerialize
+        {
+            get { return default(bool); }
+        }
+
+
+        public bool IsDataContractedType
+        {
+            get { return default(bool); }
+        }
+
+        public bool IsDataContractedMember
+        {
+            get { return default(bool); }
         }
 
         public bool IsReadable

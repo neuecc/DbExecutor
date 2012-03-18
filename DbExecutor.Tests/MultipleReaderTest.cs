@@ -84,12 +84,12 @@ select TypeId from Property  where TypeId = 9999
             {
 
                 var multiple = executor.ExecuteMultiple(@"
-select * from Method where TypeId = @TypeId
-select * from Type
+select * from Methods where TypeId = @TypeId
+select * from Types
             ", new { TypeId = 1 });
 
                 var a = multiple.Select<Method>();
-                var b = multiple.Select<Type>();
+                //var b = multiple.Select<Type>();
 
                 var dz = a;
             }
@@ -101,8 +101,8 @@ select * from Type
             using (var executor = new DbExecutor(Db.ConnectionFactory()))
             {
                 var multiple = executor.ExecuteMultiple(@"
-select * from Method where TypeId = @TypeId
-select * from Type
+select * from Methods where TypeId = @TypeId
+select * from Types
             ", new { TypeId = 1 });
 
                 var a = multiple.SelectDynamic();

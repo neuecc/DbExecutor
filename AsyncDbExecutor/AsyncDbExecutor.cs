@@ -111,6 +111,7 @@ namespace Codeplex.Data
             Contract.Ensures(Contract.Result<IObservable<int>>() != null);
 
             var cmd = (SqlCommand)this.PrepareExecute(query, commandType, parameter);
+            
             return Observable.FromAsyncPattern<int>(
                     (ac, o) => cmd.BeginExecuteNonQuery(ac, o), cmd.EndExecuteNonQuery)
                 .Invoke()

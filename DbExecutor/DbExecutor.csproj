@@ -102,11 +102,11 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Runtime.Serialization" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DbExecutor.cs" />
     <Compile Include="Accessor\IMemberAccessor.cs" />
-    <Compile Include="Accessor\ReflectionAccessor.cs" />
     <Compile Include="Accessor\IKeyIndexed.cs" />
     <Compile Include="ParameterContainer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

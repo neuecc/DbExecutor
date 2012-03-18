@@ -16,13 +16,27 @@ namespace Codeplex.Data
         {
             // if T is ValueType then can't set SetValue
             // must be boxed
-            object result = new T();
+            object result = null;
             for (int i = 0; i < dataRecord.FieldCount; i++)
             {
                 if (dataRecord.IsDBNull(i)) continue;
 
-                var accessor = accessors[dataRecord.GetName(i)];
-                if (accessor != null && accessor.IsWritable) accessor.SetValueDirect(result, dataRecord[i]);
+                var key = dataRecord.GetName(i);
+                Contract.Assume(key != null);
+
+                var accessor = accessors[key];
+                if (accessor == null) continue;
+                if (result == null)
+                {
+                    result = (accessor.IsDataContractedType)
+                        ? System.Runtime.Serialization.FormatterServices.GetUninitializedObject(typeof(T))
+                        : new T();
+                }
+
+                if (!accessor.IsIgnoreSerialize && accessor.IsWritable)
+                {
+                    accessor.SetValueDirect(result, dataRecord[i]);
+                }
             }
             return (T)result;
         }

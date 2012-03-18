@@ -82,18 +82,18 @@ namespace Codeplex.Data
                         for (int i = 0; i < values.Length; i++)
                         {
                             var param = command.CreateParameter();
-                            param.ParameterName = parameterSymbol + p.Name + "__" + i;
+                            param.ParameterName = parameterSymbol + p.MemberName + "__" + i;
                             sb.Append(param.ParameterName);
                             if (i != values.Length - 1) sb.Append(", ");
                             param.Value = (values[i] == null) ? DBNull.Value : values[i];
                             command.Parameters.Add(param);
                         }
-                        query = query.Replace(parameterSymbol + p.Name, sb.Append(")").ToString());
+                        query = query.Replace(parameterSymbol + p.MemberName, sb.Append(")").ToString());
                     }
                     else
                     {
                         var param = command.CreateParameter();
-                        param.ParameterName = p.Name;
+                        param.ParameterName = p.MemberName;
                         param.Value = (value == null) ? DBNull.Value : value;
                         command.Parameters.Add(param);
                     }
@@ -108,7 +108,7 @@ namespace Codeplex.Data
                     Contract.Assume(extraParameter != null);
 
                     var param = command.CreateParameter();
-                    param.ParameterName = "__extra__" + p.Name;
+                    param.ParameterName = "__extra__" + p.MemberName;
                     var value = p.GetValueDirect(extraParameter);
                     param.Value = (value == null) ? DBNull.Value : value;
                     command.Parameters.Add(param);
@@ -258,8 +258,8 @@ namespace Codeplex.Data
             var propNames = AccessorCache.Lookup(insertItem.GetType())
                 .Where(p => p.IsReadable)
                 .ToArray();
-            var column = string.Join(", ", propNames.Select(p => p.Name));
-            var data = string.Join(", ", propNames.Select(p => parameterSymbol + p.Name));
+            var column = string.Join(", ", propNames.Select(p => p.MemberName));
+            var data = string.Join(", ", propNames.Select(p => parameterSymbol + p.MemberName));
 
             var query = string.Format("insert into {0} ({1}) values ({2})", tableName, column, data);
 
@@ -280,10 +280,10 @@ namespace Codeplex.Data
 
             var update = string.Join(", ", AccessorCache.Lookup(updateItem.GetType())
                 .Where(p => p.IsReadable)
-                .Select(p => p.Name + " = " + parameterSymbol + p.Name));
+                .Select(p => p.MemberName + " = " + parameterSymbol + p.MemberName));
 
             var where = string.Join(" and ", AccessorCache.Lookup(whereCondition.GetType())
-                .Select(p => p.Name + " = " + parameterSymbol + "__extra__" + p.Name));
+                .Select(p => p.MemberName + " = " + parameterSymbol + "__extra__" + p.MemberName));
 
             var query = string.Format("update {0} set {1} where {2}", tableName, update, where);
 
@@ -304,7 +304,7 @@ namespace Codeplex.Data
             Contract.Requires<ArgumentNullException>(whereCondition != null);
 
             var where = string.Join(" and ", AccessorCache.Lookup(whereCondition.GetType())
-                .Select(p => p.Name + " = " + parameterSymbol + p.Name));
+                .Select(p => p.MemberName + " = " + parameterSymbol + p.MemberName));
 
             var query = string.Format("delete from {0} where {1}", tableName, where);
 

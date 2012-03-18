@@ -84,25 +84,25 @@ namespace DbExecutorTest
         public void ClassTest()
         {
             var accessors = AccessorCache.Lookup(typeof(TestMockClass))
-                .OrderBy(x => x.Name)
+                .OrderBy(x => x.MemberName)
                 .ToArray();
 
             accessors.Length.Is(10);
             accessors.All(a => a.DeclaringType == typeof(TestMockClass));
             accessors.Count(a => a.IsReadable).Is(7);
             accessors.Count(a => a.IsWritable).Is(7);
-            accessors.Select(a => a.Name).Is("Field1", "Field2", "Property1", "Property2", "Property3", "Property4", "Property5", "Property6", "PropertyReadOnly", "PropertySetOnly");
+            accessors.Select(a => a.MemberName).Is("Field1", "Field2", "Property1", "Property2", "Property3", "Property4", "Property5", "Property6", "PropertyReadOnly", "PropertySetOnly");
 
             var target = new TestMockClass();
-            accessors[0].SetValue(target, "a");
-            accessors[2].SetValue(target, "b");
-            accessors[4].SetValue(target, "c");
+            accessors[0].SetValueDirect(target, "a");
+            accessors[2].SetValueDirect(target, "b");
+            accessors[4].SetValueDirect(target, "c");
             accessors[6].IsWritable.Is(false);
-            accessors[1].SetValue(target, 1);
-            accessors[3].SetValue(target, 2);
-            accessors[5].SetValue(target, 3);
+            accessors[1].SetValueDirect(target, 1);
+            accessors[3].SetValueDirect(target, 2);
+            accessors[5].SetValueDirect(target, 3);
             accessors[7].IsWritable.Is(false);
-            accessors.Where(a => a.IsReadable).Select(a => a.GetValue(target))
+            accessors.Where(a => a.IsReadable).Select(a => a.GetValueDirect(target))
                 .Is("a", 1, "b", 2, null, 0, null);
             Enumerable.Repeat((target as TestMockClass), 1)
                 .SelectMany(m => new object[] { m.Field1, m.Field2, m.Property1, m.Property2, m.Property5, m.Property6 })
@@ -115,7 +115,7 @@ namespace DbExecutorTest
             var write = accessors[9];
             write.IsReadable.Is(false);
             write.IsWritable.Is(true);
-            write.SetValue(target, "test");
+            write.SetValueDirect(target, "test");
             Assert.AreEqual("test", (target as TestMockClass).AsDynamic().hiddenField);
         }
 
@@ -123,25 +123,25 @@ namespace DbExecutorTest
         public void StructTest()
         {
             var accessors = AccessorCache.Lookup(typeof(TestMockStruct))
-                .OrderBy(x => x.Name)
+                .OrderBy(x => x.MemberName)
                 .ToArray();
 
             accessors.Length.Is(10);
             accessors.All(a => a.DeclaringType == typeof(TestMockStruct));
             accessors.Take(8).All(a => a.IsReadable);
             accessors.Take(8).All(a => a.IsWritable);
-            accessors.Select(a => a.Name).Is("Field1", "Field2", "Property1", "Property2", "Property3", "Property4", "Property5", "Property6", "PropertyReadOnly", "PropertySetOnly");
+            accessors.Select(a => a.MemberName).Is("Field1", "Field2", "Property1", "Property2", "Property3", "Property4", "Property5", "Property6", "PropertyReadOnly", "PropertySetOnly");
 
             object target = new TestMockStruct();
-            accessors[0].SetValue(target, "a");
-            accessors[2].SetValue(target, "b");
-            accessors[4].SetValue(target, "c");
+            accessors[0].SetValueDirect(target, "a");
+            accessors[2].SetValueDirect(target, "b");
+            accessors[4].SetValueDirect(target, "c");
             accessors[6].IsWritable.Is(false);
-            accessors[1].SetValue(target, 1);
-            accessors[3].SetValue(target, 2);
-            accessors[5].SetValue(target, 3);
+            accessors[1].SetValueDirect(target, 1);
+            accessors[3].SetValueDirect(target, 2);
+            accessors[5].SetValueDirect(target, 3);
             accessors[7].IsWritable.Is(false);
-            accessors.Where(a => a.IsReadable).Select(a => a.GetValue(target))
+            accessors.Where(a => a.IsReadable).Select(a => a.GetValueDirect(target))
                 .Is("a", 1, "b", 2, null, 0, null);
             Enumerable.Repeat((TestMockStruct)target, 1)
                 .SelectMany(m => new object[] { m.Field1, m.Field2, m.Property1, m.Property2, m.Property5, m.Property6 })
@@ -154,7 +154,7 @@ namespace DbExecutorTest
             var write = accessors[9];
             write.IsReadable.Is(false);
             write.IsWritable.Is(true);
-            write.SetValue(target, "test");
+            write.SetValueDirect(target, "test");
             Assert.AreEqual("test", ((TestMockStruct)target).AsDynamic().hiddenField);
         }
 
@@ -162,7 +162,7 @@ namespace DbExecutorTest
         public void AnonymousType()
         {
             var anon = new { P1 = "HOGE", P2 = 1000 };
-            var xs = anon.GetType().GetProperties().Select(p => new CompiledAccessor(p)).OrderBy(x => x.Name).ToArray();
+            var xs = anon.GetType().GetProperties().Select(p => new CompiledAccessor(p)).OrderBy(x => x.MemberName).ToArray();
 
             xs.Length.Is(2);
             xs.Select(a => a.DeclaringType).All(t => t == anon.GetType());
@@ -170,8 +170,8 @@ namespace DbExecutorTest
             xs.All(a => !a.IsWritable);
 
             object an = anon;
-            xs[0].GetValue(an).Is("HOGE");
-            xs[1].GetValue(an).Is(1000);
+            xs[0].GetValueDirect(an).Is("HOGE");
+            xs[1].GetValueDirect(an).Is(1000);
         }
     }
 }

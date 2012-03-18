@@ -28,7 +28,7 @@ namespace Codeplex.Data.Internal
                     var fields = targetType.GetFields(BindingFlags.Public | BindingFlags.Instance | BindingFlags.GetField | BindingFlags.SetField)
                       .Select(fi => new CompiledAccessor(fi));
 
-                    accessors = KeyIndexed.Create(props.Concat(fields), a => a.Name, a => a);
+                    accessors = KeyIndexed.Create(props.Concat(fields), a => a.MemberName, a => a);
                     cache.Add(targetType, accessors);
                 };
 
