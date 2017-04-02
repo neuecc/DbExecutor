@@ -12,7 +12,7 @@ Features
 * Dynamic IDataRecord accessor
 * Easy transaction
 * Support Code Contracts
-* Available NuGet install [url:PM> Install-Package DbExecutor|http://www.nuget.org/List/Packages/DbExecutor]
+* Available NuGet install Install-Package [DbExecutor](http://www.nuget.org/List/Packages/DbExecutor)
 
 Standard Usage
 ---
